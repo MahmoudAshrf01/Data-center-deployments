@@ -1,3 +1,4 @@
+import { GithubLogoIcon } from '@phosphor-icons/react/dist/csr/GithubLogo'
 import { lazy, Suspense, useMemo, useState } from 'react'
 
 import { calculateDeploymentSummary } from '@/domain/graph/calculateDeploymentSummary'
@@ -173,17 +174,28 @@ export function App() {
   return (
     <div className="min-h-screen">
       <main className="mx-auto max-w-[96rem] space-y-7 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <header className="max-w-3xl">
-          <p className="text-sm font-semibold text-brand-700">
-            Infrastructure operations
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Data center deployments
-          </h1>
-          <p className="mt-2 text-base text-mute">
-            Monitor device rollout, inspect topology, and understand impact
-            before changing infrastructure.
-          </p>
+        <header className="flex flex-col items-start justify-between gap-5 sm:flex-row">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold text-brand-700">
+              Infrastructure operations
+            </p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Data center deployments
+            </h1>
+            <p className="mt-2 text-base text-mute">
+              Monitor device rollout, inspect topology, and understand impact
+              before changing infrastructure.
+            </p>
+          </div>
+          <a
+            className="ui-button ui-button-secondary shrink-0"
+            href="https://github.com/MahmoudAshrf01/Data-center-deployments"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <GithubLogoIcon size={19} weight="fill" aria-hidden="true" />
+            View on GitHub
+          </a>
         </header>
 
         <DeploymentSummary summary={summary} />

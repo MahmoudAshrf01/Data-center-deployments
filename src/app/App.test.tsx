@@ -37,6 +37,12 @@ describe('App', () => {
     expect(
       screen.getByRole('heading', { name: 'Data center deployments' }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'View on GitHub' }),
+    ).toHaveAttribute(
+      'href',
+      'https://github.com/MahmoudAshrf01/Data-center-deployments',
+    )
     const serverButton = screen.getByRole('button', { name: 'Server 02' })
     await user.click(serverButton)
 
