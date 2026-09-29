@@ -1,0 +1,36 @@
+ADR-002: Isolate Cytoscape Behind a Graph Adapter
+
+Status: Accepted
+Date: 2026-09-29
+
+Context
+
+Cytoscape.js is an imperative graph engine with its own lifecycle, event model,
+data collection, positions, and rendering. Allowing every React feature to call
+the core directly would couple domain workflows to a rendering library and make
+testing and incremental synchronization difficult.
+
+Decision
+
+Create one Cytoscape instance per GraphCanvas lifetime and access it through a
+typed GraphAdapter. The normalized application graph is authoritative for
+devices and connections; Cytoscape is the visual projection. Only the adapter
+translates entities, applies incremental batches, manages visual classes, and
+translates engine events into domain IDs.
+
+Consequences
+
+- Domain logic is testable without canvas rendering.
+- Replacing or upgrading rendering behavior is localized.
+- Synchronization must have explicit change contracts and lifecycle cleanup.
+- Node positions stay renderer-owned until persistence is required.
+
+Alternatives considered
+
+- Direct Cytoscape calls in React components: faster initially but creates
+  distributed coupling and fragile effects.
+- Store the Cytoscape core in Zustand: exposes non-serializable imperative state
+  globally and encourages bypassing the adapter.
+- Rebuild all elements on each update: simpler synchronization but unsuitable
+  for frequent or large updates.
+

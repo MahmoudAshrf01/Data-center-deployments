@@ -1,0 +1,576 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Frontend Architecture
+
+Status: Active baseline; updated 2026-09-30
+Audience: Frontend developers, reviewers, and future maintainers
+
+
+1. PURPOSE
+
+This document defines the frontend architecture for the Data Center Deployment
+Visualizer. The architecture must support the initial frontend-only MVP while
+allowing the application to grow toward large graph datasets, live backend
+updates, additional device types, and more complex deployment workflows.
+
+The primary architectural goals are:
+
+- Keep domain logic independent from React, Material UI, and Cytoscape.js.
+- Keep React responsible for interface composition, not graph computation.
+- Treat Cytoscape.js as an imperative rendering engine behind a typed adapter.
+- Make updates incremental so one device update does not rebuild the graph.
+- Make important behavior testable without rendering a canvas.
+- Make the future addition of an API possible without redesigning the app.
+
+
+2. APPROVED TECHNOLOGY STACK
+
+Runtime and application:
+
+- React
+- TypeScript with strict compiler settings
+- Vite
+- Material UI
+- Tailwind CSS
+- Cytoscape.js
+- Zustand
+- Zod
+
+Testing:
+
+- Vitest
+- React Testing Library
+- Cypress
+- Mock Service Worker (MSW)
+
+Code quality:
+
+- ESLint
+- typescript-eslint
+- Prettier
+
+Optional additions when justified:
+
+- TanStack Query when a real backend is introduced
+- A Web Worker for measured CPU-heavy graph processing
+- Husky and lint-staged for pre-commit checks
+
+Do not add TanStack Query, a router, a worker, or another state library until a
+feature requires it. The initial application is a single workspace and can stay
+small while preserving the boundaries described here.
+
+Current capabilities include dataset previews (100/500/1,000 devices),
+pagination, table/card presentation modes, searchable connection selectors,
+semantic toasts, and Cytoscape layouts with Dagre as the default.
+
+
+3. ARCHITECTURAL STYLE
+
+Use a feature-oriented architecture with four main layers:
+
+1. App layer
+   Application startup, providers, global theme, error boundaries, and routing
+   if routing is introduced later.
+
+2. Feature layer
+   User-facing capabilities such as graph exploration, search, filters,
+   connection management, deployment simulation, and decommissioning.
+
+3. Domain/entity layer
+   Framework-independent types, schemas, rules, calculations, and commands.
+
+4. Infrastructure layer
+   Cytoscape integration, repositories, mock APIs, browser storage, workers,
+   and other external systems.
+
+Allowed dependency direction:
+
+  app -> features -> domain/entities
+  app -> infrastructure
+  features -> infrastructure through defined interfaces
+  infrastructure -> domain/entities
+
+Domain modules must not import React, Material UI, Zustand, or Cytoscape.js.
+Feature modules must not reach into another feature's private files.
+
+
+4. PROPOSED SOURCE STRUCTURE
+
+src/
+  app/
+    App.tsx
+    AppProviders.tsx
+    AppErrorBoundary.tsx
+    theme.ts
+
+  entities/
+    device/
+      device.types.ts
+      device.schema.ts
+      device.selectors.ts
+      index.ts
+    connection/
+      connection.types.ts
+      connection.schema.ts
+      connection.selectors.ts
+      index.ts
+
+  domain/
+    graph/
+      calculateDeploymentSummary.ts
+      findDirectConnections.ts
+      calculateDecommissionImpact.ts
+      graph.commands.ts
+      graph.errors.ts
+      index.ts
+
+  features/
+    graph-explorer/
+      components/
+        GraphCanvas.tsx
+        GraphToolbar.tsx
+        LayoutSelector.tsx
+      graph-adapter/
+        CytoscapeGraphAdapter.ts
+        createCytoscape.ts
+        graphStyles.ts
+        syncGraphChanges.ts
+      hooks/
+        useGraphController.ts
+      index.ts
+
+    device-search/
+    graph-filters/
+    device-details/
+    connection-management/
+    decommission-device/
+    deployment-simulation/
+    deployment-summary/
+
+  store/
+    graph.store.ts
+    graph-view.store.ts
+    graph.selectors.ts
+    store.types.ts
+
+  services/
+    graph.repository.ts
+    mockGraph.repository.ts
+    deploymentSimulator.ts
+
+  workers/
+    graph-processing.worker.ts
+
+  mocks/
+    fixtures/
+      devices.ts
+      connections.ts
+    handlers.ts
+    browser.ts
+
+  shared/
+    components/
+    hooks/
+    constants/
+    types/
+    utils/
+
+  test/
+    setup.ts
+    builders/
+
+The workers directory should be added only when profiling demonstrates a need.
+
+
+4.1 STYLING RESPONSIBILITIES
+
+The visual direction is defined by docs/design-system.tailwind.js. Tailwind CSS
+is the source of truth for the product's visual language. Material UI is a
+behavior/accessibility toolkit and must not impose its default visual identity.
+
+- Use the colors, type, radii, shadows, focus treatment, and ui-* component
+  classes in docs/design-system.tailwind.js as the canonical design tokens.
+- Use Tailwind CSS for layout and for the visible styling of application
+  components.
+- Use semantic HTML plus Tailwind for straightforward elements such as cards,
+  buttons, tags, inputs, headings, and layout containers.
+- Use Material UI where its accessible behavior is valuable, especially for
+  dialogs, drawers, menus, popovers, tooltips, focus traps, and complex inputs.
+- Fully customize MUI components through one application theme, centralized
+  component variants/style overrides, and application wrapper components.
+- MUI components must visually match ui-card, ui-panel, ui-button, ui-tag, and
+  ui-input rather than using recognizable MUI defaults.
+- Do not import raw MUI components throughout feature code. Expose approved
+  components such as AppDialog, AppDrawer, AppSelect, and AppTooltip from the
+  shared UI layer.
+- Prefer className or slotProps when a MUI component exposes the required slot.
+  Use centralized theme overrides for internal slots that Tailwind classes
+  cannot reliably reach.
+- Avoid scattered sx objects and one-off theme values in feature components.
+- Use Cytoscape's stylesheet API only for graph nodes, edges, labels, and graph
+  interaction states.
+- Avoid styling the same property on the same element with both MUI and
+  Tailwind; choose one owner to prevent precedence problems.
+- Generate or manually map the MUI theme from the Tailwind design tokens; never
+  maintain two independently chosen palettes, radii, or shadows.
+- Keep global CSS limited to resets, application root sizing, fonts, and other
+  true global concerns.
+
+The detailed mapping and component ownership rules are defined in
+docs/design-system-integration.txt.
+
+
+5. DOMAIN MODEL
+
+Use branded string aliases if practical, or plain string aliases initially:
+
+  type DeviceId = string;
+  type ConnectionId = string;
+
+  type DeviceType = "server" | "switch" | "storage" | "rack";
+
+  type DeviceStatus =
+    | "pending"
+    | "deploying"
+    | "deployed"
+    | "failed"
+    | "decommissioning";
+
+  interface Device {
+    id: DeviceId;
+    name: string;
+    type: DeviceType;
+    status: DeviceStatus;
+    rackId: DeviceId | null;
+    progress: number;
+  }
+
+  interface Connection {
+    id: ConnectionId;
+    sourceId: DeviceId;
+    targetId: DeviceId;
+    type: "network" | "storage" | "contains";
+    status: "active" | "inactive";
+  }
+
+Connected device IDs must not be duplicated inside Device. Connections are the
+source of truth for relationships. Duplicating them causes consistency bugs when
+an edge is added or removed.
+
+Validate external or imported data with Zod. TypeScript types protect code at
+compile time; Zod protects boundaries at runtime.
+
+Important invariants:
+
+- Device IDs and connection IDs are unique.
+- Connection endpoints must reference existing devices.
+- A connection cannot reference the same endpoint twice unless self-links are
+  intentionally supported later.
+- Progress is an integer or finite number from 0 through 100.
+- Deployed devices have progress 100.
+- Pending devices normally have progress 0.
+- Removing a device must also remove or deactivate all attached connections.
+
+
+6. STATE MANAGEMENT
+
+6.1 Domain graph store
+
+Zustand owns the mutable client-side graph model during the frontend-only phase.
+Store data in normalized records:
+
+  interface GraphState {
+    devicesById: Record<DeviceId, Device>;
+    connectionsById: Record<ConnectionId, Connection>;
+    connectionIdsByDeviceId: Record<DeviceId, ConnectionId[]>;
+
+    addConnection(connection: Connection): Result<void>;
+    removeConnection(id: ConnectionId): Result<void>;
+    updateDeviceProgress(id: DeviceId, progress: number): Result<void>;
+    beginDecommission(id: DeviceId): Result<void>;
+    completeDecommission(id: DeviceId): Result<void>;
+    replaceGraph(snapshot: GraphSnapshot): Result<void>;
+  }
+
+The adjacency index makes direct-neighbor and impact lookups inexpensive. Every
+connection mutation must update both the connection record and adjacency index
+atomically through one store action.
+
+6.2 View store
+
+Keep interface state separate from domain graph data:
+
+  interface GraphViewState {
+    selectedDeviceId: DeviceId | null;
+    searchQuery: string;
+    statusFilter: DeviceStatus | "all";
+    typeFilter: DeviceType | "all";
+    rackFilter: DeviceId | "all";
+    activeLayout: "grid" | "circle" | "breadthfirst" | "cose";
+    isDetailsOpen: boolean;
+  }
+
+This separation prevents frequent graph updates from unnecessarily rerendering
+controls and dialogs.
+
+6.3 Selector rules
+
+- Components subscribe to the smallest required slice.
+- Do not subscribe a page component to the entire graph store.
+- Compute summaries and filtered IDs in reusable selectors.
+- Do not store values that can be cheaply derived from authoritative state.
+- Memoize expensive derived data only after measurement.
+- Avoid constructing a new large array inside frequently called selectors.
+
+6.4 Future server state
+
+When a backend exists, introduce TanStack Query for fetched devices,
+connections, mutations, cache invalidation, and background synchronization.
+Zustand continues to own selection, filters, panel state, and temporary editing
+state. Do not copy the entire query cache into Zustand.
+
+
+7. CYTOSCAPE.JS INTEGRATION
+
+Cytoscape.js is an imperative engine. It must not be treated as React-rendered
+state.
+
+Rules:
+
+- Create one Cytoscape instance when GraphCanvas mounts.
+- Store the instance in a ref owned by the graph adapter/controller.
+- Destroy it when the graph canvas unmounts.
+- Never store the Cytoscape instance in Zustand.
+- Never recreate the instance when filters or device statuses change.
+- Never render one React component for every graph node.
+- Apply additions, removals, and data changes incrementally.
+- Batch large groups of Cytoscape changes with cy.batch().
+- Run layouts after, not inside, style/data update batches.
+
+Expose Cytoscape through a narrow interface:
+
+  interface GraphAdapter {
+    initialize(container: HTMLElement, snapshot: GraphSnapshot): void;
+    applyChanges(changes: readonly GraphChange[]): void;
+    setSelectedDevice(id: DeviceId | null): void;
+    setVisibleElements(deviceIds: ReadonlySet<DeviceId>): void;
+    focusDevice(id: DeviceId): void;
+    runLayout(layout: GraphLayout): Promise<void>;
+    fit(): void;
+    destroy(): void;
+  }
+
+The adapter translates domain data into Cytoscape element definitions and
+translates Cytoscape events into domain IDs. No other feature should import or
+manipulate the Cytoscape core directly.
+
+The application graph store is the source of truth for devices and connections.
+Cytoscape is the visual projection. Node positions may remain owned by
+Cytoscape, unless saving user-created layouts becomes a requirement.
+
+
+8. UPDATE FLOW
+
+Initial load:
+
+  repository/mock data
+    -> Zod validation
+    -> normalized GraphSnapshot
+    -> Zustand graph store
+    -> GraphAdapter.initialize()
+    -> Cytoscape render
+
+User selection:
+
+  Cytoscape node tap
+    -> adapter emits device ID
+    -> graph-view store selects ID
+    -> details panel rerenders
+    -> adapter applies highlight classes
+
+Device status update:
+
+  deployment simulator/API event
+    -> graph store action
+    -> narrow store subscriptions update summary/details
+    -> adapter receives one GraphChange
+    -> Cytoscape updates only the affected node
+
+Connection mutation:
+
+  feature command
+    -> validate endpoints and business rules
+    -> graph store atomic action
+    -> adjacency index update
+    -> adapter incrementally adds/removes the edge
+
+
+9. FEATURE WORKFLOWS
+
+9.1 Search
+
+- Search the normalized device collection by name and ID.
+- Debounce only if profiling or future remote search requires it.
+- On result selection, ensure the node is visible, select it, focus it, and open
+  the details panel.
+- For very large remote datasets, replace local search with server search and
+  load the relevant neighborhood on demand.
+
+9.2 Filters
+
+- Filters control the visible graph projection; they do not delete domain data.
+- Keep hidden-node behavior explicit: either hide isolated edges automatically
+  or show only edges whose endpoints are both visible.
+- Summary cards should clearly state whether they represent all loaded devices
+  or only currently filtered devices.
+
+9.3 Connected-node highlighting
+
+- Use the adjacency index for application-level details.
+- Apply Cytoscape classes such as selected, connected, and dimmed in one batch.
+- Do not rewrite the whole Cytoscape stylesheet on every selection.
+
+9.4 Deployment simulation
+
+- Implement the simulation as a service, not a timer inside every node or card.
+- Prefer a single scheduler that dispatches batched updates.
+- Make the clock injectable so tests can use fake timers.
+- Stop and clean up the scheduler when the feature is disabled or unmounted.
+
+9.5 Decommissioning
+
+Use an explicit command flow:
+
+  select device
+    -> calculate impact
+    -> show affected connections/devices
+    -> request confirmation
+    -> mark decommissioning
+    -> complete after simulated/API response
+    -> remove or archive device and attached connections
+
+Impact calculation belongs in a pure domain function. The initial requirement
+uses direct connections. If multi-hop dependency impact is added later, expose
+depth and connection-type rules as explicit parameters.
+
+Prevent duplicate confirmations and repeated decommission commands while the
+device is already decommissioning.
+
+
+10. LARGE-DATA DESIGN
+
+No state library can make an unlimited number of visible nodes and edges cheap.
+The application must avoid assuming that all known data must be rendered at the
+same time.
+
+Scaling strategy, in priority order:
+
+1. Render the relevant subgraph, not the full data center.
+2. Load by site, room, rack, device, or traversal depth.
+3. Support expand-neighbors-on-demand.
+4. Cluster or collapse devices by rack/type/network segment.
+5. Use normalized records and adjacency indexes.
+6. Apply incremental and batched Cytoscape mutations.
+7. Keep labels, curves, overlays, compound nodes, and animations limited.
+8. Avoid layout execution for progress/status-only changes.
+9. Precompute or persist positions for large stable graphs.
+10. Move measured CPU-heavy transformations to a Web Worker.
+
+Experimental Cytoscape WebGL rendering must not be the only scaling plan.
+Benchmark it against the stable renderer with representative data before use.
+
+Detailed performance requirements and benchmark scenarios are defined in
+docs/performance-and-scaling.txt.
+
+
+11. ERROR HANDLING
+
+- Convert expected domain failures into typed Result values or typed errors.
+- Show user-friendly notifications for recoverable failures.
+- Use an application error boundary for unexpected React rendering failures.
+- Never silently accept a connection with a missing endpoint.
+- If imported data is partially invalid, report errors with enough location and
+  field information to correct the input.
+- Log technical details separately from user-facing messages.
+
+
+12. ACCESSIBILITY
+
+A canvas graph is not sufficient as the only way to inspect the data.
+
+- Provide a keyboard-accessible device list or table representing the visible
+  graph.
+- Keep selection synchronized between the list and graph.
+- Give inputs, filters, icon buttons, dialogs, and progress indicators labels.
+- Do not represent device status using color alone; use text/icons/patterns.
+- Manage focus when opening and closing details and confirmation dialogs.
+- Ensure the decommission warning describes the affected devices in text.
+
+
+13. CODE QUALITY RULES
+
+- Follow docs/clean-code-and-solid-principles.txt.
+- Enable TypeScript strict mode.
+- Prefer noUncheckedIndexedAccess and exactOptionalPropertyTypes.
+- Avoid any; isolate unavoidable third-party typing exceptions.
+- Use ESLint with typescript-eslint recommended type-aware rules.
+- Use Prettier strictly for formatting and eslint-config-prettier to avoid rule
+  conflicts.
+- Use the appropriate Prettier integration to keep Tailwind utility classes in
+  a consistent order.
+- Public feature APIs are exported from each feature's index.ts.
+- Use path aliases such as @/features and @/domain.
+- Avoid large shared utility folders containing unrelated behavior.
+- Keep business rules in named pure functions, not anonymous component effects.
+- Add a dependency only when it has a clear responsibility.
+
+
+14. IMPLEMENTATION ORDER
+
+Phase 1 - Foundation
+
+- Create Vite React TypeScript application.
+- Configure strict TypeScript, aliases, ESLint, and Prettier.
+- Configure Material UI theme, Tailwind CSS, and application providers.
+- Define Device and Connection schemas/types.
+- Add representative validated mock fixtures.
+
+Phase 2 - Graph core
+
+- Implement normalized Zustand graph and view stores.
+- Implement pure graph selectors and impact calculations.
+- Implement GraphAdapter and initial Cytoscape canvas.
+- Add selection, connected highlighting, pan, zoom, fit, and layouts.
+
+Phase 3 - Product workflows
+
+- Details panel, search, and filters.
+- Deployment summary and simulated progress.
+- Add/remove connections.
+- Decommission impact dialog and command flow.
+- Accessible device list/table.
+
+Phase 4 - Verification and hardening
+
+- Unit and integration tests.
+- Cypress critical-path tests.
+- MSW-backed repository boundary.
+- Generated performance datasets and benchmark runs.
+- Error states, empty states, and accessibility review.
+
+
+15. ARCHITECTURAL DECISIONS SUMMARY
+
+- Zustand is used for client/domain state because it is small, typed, and allows
+  narrow subscriptions.
+- Material UI owns themed interactive components, while Tailwind CSS primarily
+  defines the complete visual design. MUI defaults must not appear in the final
+  interface.
+- TanStack Query is deferred until remote server state exists.
+- Cytoscape is isolated behind an adapter and is not stored in React/Zustand.
+- Graph entities are normalized and connections own relationship truth.
+- Business rules are pure domain code and can be tested without the browser.
+- Vitest replaces Jest because it shares the Vite toolchain.
+- Cypress covers a small set of high-value complete user journeys.
+- MSW creates a stable repository/API boundary before a backend exists.
+- Large datasets are handled primarily through subgraphs, aggregation, and
+  incremental updates rather than attempting to render everything.

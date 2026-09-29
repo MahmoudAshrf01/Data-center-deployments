@@ -1,0 +1,117 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Accessibility Requirements
+
+Status: Proposed
+Target: WCAG 2.2 AA for primary workflows
+
+
+1. PRINCIPLE
+
+The graph is one presentation of the data, not the only way to understand or
+operate the application. Core information and actions must be available through
+semantic, keyboard-operable interface elements.
+
+
+2. KEYBOARD
+
+- All controls are reachable in a logical tab order.
+- Visible focus follows docs/design-system.tailwind.js.
+- No keyboard trap exists outside an intentionally open modal.
+- Escape closes dismissible menus, popovers, drawers, and dialogs.
+- Modal focus starts at a meaningful control and returns to the trigger.
+- Device list/table supports keyboard selection.
+- Graph-only pointer gestures have an equivalent control or list/table action.
+
+
+3. GRAPH ALTERNATIVE
+
+Provide a synchronized device list or table that exposes:
+
+- Device name and ID
+- Type
+- Status
+- Rack
+- Progress
+- Direct connection count
+- Selection/details action
+- Eligible connection and decommission actions
+
+Filtering and search apply consistently to the graph and its accessible
+alternative. Selecting from either surface updates the other.
+
+
+4. SEMANTICS AND LABELING
+
+- Use semantic headings and landmarks.
+- Every input has an associated label.
+- Icon-only buttons have accessible names.
+- Summary values include meaningful labels.
+- Progress uses an accessible progressbar or equivalent text.
+- Tables use proper headers and captions/accessible names.
+- Validation errors identify their related fields.
+- Required fields and disabled states are programmatically conveyed.
+
+
+5. COLOR AND VISUAL INFORMATION
+
+- Text and essential controls meet WCAG AA contrast.
+- Status is not communicated by color alone.
+- Graph status uses text, icon, border, shape, or another redundant cue where
+  practical.
+- Connected/selected/unrelated states remain distinguishable in supported color
+  schemes.
+- Focus indication is visible against paper, card, and graph surfaces.
+
+
+6. LIVE UPDATES
+
+- Do not announce every simulated percentage change.
+- Announce meaningful completion and failure changes using a polite live region
+  when appropriate.
+- Updates do not move keyboard focus.
+- Motion is limited and respects reduced-motion preferences.
+- Users are not required to react within a short time limit.
+
+
+7. DIALOGS AND DESTRUCTIVE ACTIONS
+
+- Decommission and removal dialogs have clear titles and descriptions.
+- Affected devices/connections are presented as readable text or a list.
+- Cancel is easily reachable and does not mutate state.
+- The destructive action is named specifically, not merely "OK".
+- Busy state prevents duplicate submission and remains announced.
+
+
+8. RESPONSIVE AND ZOOM SUPPORT
+
+- Core workflows remain usable at 200 percent browser zoom.
+- Content reflows without requiring two-dimensional page scrolling where
+  practical; the graph viewport itself may pan in two dimensions.
+- Touch targets are reasonably sized and spaced.
+- Text is not embedded into bitmap assets when normal text can be used.
+
+
+9. TESTING
+
+Automated:
+
+- Run an accessibility rules engine in selected component and Cypress tests.
+- Test accessible names, roles, focus transitions, and keyboard flows.
+- Treat automation as partial coverage, not certification.
+
+Manual before MVP release:
+
+- Keyboard-only pass through every primary workflow
+- Screen-reader smoke test of load, search, details, filtering, and decommission
+- Browser zoom/reflow check
+- Contrast review
+- Reduced-motion check
+- Graph/list synchronization check
+
+
+10. DEFINITION OF DONE
+
+A feature is not complete if its only usable interaction exists inside the
+canvas, it lacks keyboard access, status relies only on color, or its modal
+focus behavior is broken.
+

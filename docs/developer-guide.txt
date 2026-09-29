@@ -1,0 +1,163 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Developer Guide
+
+Status: Living; setup verified 2026-09-30
+
+
+1. PREREQUISITES
+
+- Node.js 22.12 or newer (verified with 22.21)
+- npm 10 or newer (verified with 10.9)
+- Install from the committed package-lock.json with npm
+- Supported production browser matrix: pending product decision
+
+package.json enforces the minimum Node version used by Vite/Vitest.
+
+
+2. EXPECTED COMMANDS
+
+Verified commands:
+
+  npm install
+  npm run dev
+  npm run build
+  npm run preview
+  npm run typecheck
+  npm run lint
+  npm run lint:fix
+  npm run format
+  npm run format:check
+  npm run test
+  npm run test:coverage
+  npm run test:e2e
+
+  npm run test:e2e:open
+
+The Cypress npm package and configuration are installed. Its separate Windows
+browser binary did not finish downloading in the initial environment. Run
+`npx cypress install`, then `npx cypress verify`, on a machine/network that can
+reach the Cypress binary host before using the E2E commands.
+
+
+3. SOURCE ORGANIZATION
+
+Follow docs/frontend-architecture.txt. In summary:
+
+- app: startup, providers, theme, and global error boundaries
+- entities: domain types, schemas, and entity selectors
+- domain: pure business rules and graph commands
+- features: user-facing capabilities
+- store: normalized graph state and view state
+
+Explore topology supports 100/500/1,000-device previews and Dagre, Grid, AVSDF,
+Concentric, Circle, Breadth-first, and Cose layouts. Devices supports table/card
+views and 15/30/60/120 rows per page.
+- services: repositories and simulation
+- shared: reusable application UI and utilities
+- mocks: fixtures and MSW handlers
+- test: setup and builders
+
+All implementation also follows docs/clean-code-and-solid-principles.txt. Treat
+those principles as review policy and as the source for future Cursor rules.
+
+
+4. ADDING A FEATURE
+
+1. Confirm the behavior and acceptance criteria.
+2. Update product/UX documentation if behavior changes.
+3. Add or extend domain types/rules without UI imports.
+4. Define repository/adapter interaction at a boundary.
+5. Implement the feature through its public index.ts API.
+6. Use shared design-system components.
+7. Add the lowest useful tests plus critical integration coverage.
+8. Check keyboard, error, empty, and loading states.
+9. Measure large-data impact if graph operations change.
+
+
+5. STATE RULES
+
+- Domain graph data is normalized.
+- Connections own relationship truth.
+- Zustand actions preserve graph/adjacency consistency atomically.
+- View state remains separate from graph data.
+- Components subscribe to narrow selectors.
+- Do not place Cytoscape instances, DOM nodes, timers, or promises in the store.
+- When a backend exists, remote cache belongs to TanStack Query rather than a
+  duplicate Zustand copy.
+
+
+6. CYTOSCAPE RULES
+
+- Only the graph adapter imports/manipulates the Cytoscape core.
+- Keep one instance for the GraphCanvas lifetime.
+- Apply changes incrementally and batch groups of changes.
+- Do not run layouts for progress-only updates.
+- Clean up listeners and destroy the instance on unmount.
+- Add graph behavior tests below the canvas level when possible.
+
+
+7. UI RULES
+
+- docs/design-system.tailwind.js is the visual authority.
+- Use shared App* components rather than raw MUI imports in features.
+- MUI provides behavior; its default visual identity must not leak through.
+- Do not add one-off colors/radii/shadows when a token exists.
+- Preserve visible focus and non-color status cues.
+- Keep graph functionality mirrored in the accessible list/table.
+
+
+8. TEST RULES
+
+- Domain logic: Vitest, pure and deterministic.
+- Components/features: React Testing Library.
+- Network/repository behavior: MSW.
+- Critical user journeys: Cypress.
+- Simulation uses fake/injected time.
+- A bug fix includes a regression test at the lowest valuable level.
+
+See docs/testing-strategy.txt.
+
+
+9. CHANGE REQUIREMENTS
+
+Before review:
+
+- Typecheck passes.
+- Lint and formatting checks pass.
+- Relevant tests pass.
+- Production build passes.
+- No unexpected generated or secret files are included.
+- Documentation and ADRs are updated when needed.
+- UI changes include narrow/wide and keyboard checks.
+- Performance-sensitive changes include representative-data evidence.
+
+
+10. ARCHITECTURE DECISIONS
+
+Create a new ADR when a change materially affects dependencies, data ownership,
+module boundaries, rendering strategy, persistence, transport, or security.
+Supersede old ADRs rather than deleting/rephrasing their historical decision.
+
+
+11. ENVIRONMENT VARIABLES
+
+No runtime variables are defined yet. When added:
+
+- Document name, purpose, required/optional state, and safe example.
+- Expose only intentionally public variables to browser code.
+- Never commit real secrets.
+- Validate required values during startup/build.
+
+
+12. PULL REQUEST DESCRIPTION
+
+Include:
+
+- Problem and user outcome
+- Important implementation decisions
+- Tests performed
+- Screenshots/video for visual changes
+- Accessibility considerations
+- Performance considerations
+- Documentation/ADR changes
+- Known limitations or follow-ups

@@ -1,0 +1,33 @@
+ADR-004: Defer TanStack Query Until Remote State Exists
+
+Status: Accepted
+Date: 2026-09-29
+
+Context
+
+The MVP has no backend and uses local mock data plus simulated updates. TanStack
+Query is designed for asynchronous server-owned state, cache freshness, and
+mutations. Installing it now would create infrastructure without a real remote
+contract.
+
+Decision
+
+Do not add TanStack Query during the frontend-only phase. Access data through a
+GraphRepository interface so a mock repository can later be replaced. Add
+TanStack Query when a backend exists and let it own remote cache/freshness while
+Zustand continues to own client interaction state.
+
+Consequences
+
+- The MVP has fewer dependencies and concepts.
+- The repository boundary must be maintained even with local fixtures.
+- Backend integration will require a deliberate ownership transition.
+- Remote data must not later be duplicated wholesale into Zustand.
+
+Alternatives considered
+
+- Add TanStack Query immediately around static fixtures: exercises future
+  patterns but provides little present value and risks fake abstractions.
+- Use Zustand for future server cache: mixes client and remote ownership and
+  recreates cache/freshness behavior.
+

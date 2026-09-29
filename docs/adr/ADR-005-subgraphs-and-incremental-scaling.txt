@@ -1,0 +1,38 @@
+ADR-005: Scale Through Relevant Subgraphs and Incremental Updates
+
+Status: Accepted
+Date: 2026-09-29
+
+Context
+
+Rendering and laying out every known device and connection cannot scale without
+bound. Edges, labels, rich styling, animations, and layouts may dominate browser
+cost. A faster state library or experimental renderer alone does not solve an
+unbounded visual workload.
+
+Decision
+
+Scale primarily by rendering the relevant subgraph: filter/load by site or
+rack, bound traversal depth, expand neighbors on demand, and cluster/collapse
+groups. Within the visible graph, use normalized indexes, one long-lived
+Cytoscape instance, incremental batched changes, inexpensive styles, and
+layouts only for meaningful topology changes. Add workers or experimental
+rendering only after representative profiling.
+
+Consequences
+
+- Product UX must support scope, expansion, and aggregation as data grows.
+- Backend APIs will eventually need subgraph/search/pagination capabilities.
+- Users may not see the entire data center simultaneously, but retain a more
+  responsive and understandable view.
+- Performance support claims require benchmark evidence and edge-density data.
+
+Alternatives considered
+
+- Always render the full graph: simple mental model but creates an unbounded
+  browser workload and can become visually unusable.
+- Rely on experimental WebGL alone: may help rendering but does not eliminate
+  layout, memory, data-transfer, or comprehension costs.
+- Premature worker architecture: increases serialization and coordination
+  complexity before a measured bottleneck exists.
+

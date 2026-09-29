@@ -1,0 +1,146 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Observability Guide
+
+Status: Proposed; no provider selected
+
+
+1. OBJECTIVES
+
+Observability should answer:
+
+- Is the application loading successfully?
+- Are users able to complete key workflows?
+- Which graph sizes or layouts cause poor performance?
+- Which errors require action?
+- Did a new release create a regression?
+
+
+2. ERROR SIGNALS
+
+Capture unexpected errors from:
+
+- React error boundaries
+- Unhandled promise rejections
+- Repository/API requests
+- Graph initialization and layout execution
+- Snapshot validation
+- Worker startup/message handling if a worker exists
+
+Expected validation/domain conflicts should not be reported as high-severity
+crashes.
+
+
+3. PERFORMANCE SIGNALS
+
+Candidate measurements:
+
+- Application startup and graph-ready duration
+- Snapshot validation/normalization duration
+- Visible node and edge count bucket
+- Layout name and duration
+- Search/filter duration for large datasets
+- Batch update size and application duration
+- Long tasks during graph interaction
+- Memory observations in controlled benchmarks
+- Standard web-vitals measurements where meaningful
+
+Avoid sending full graph payloads with metrics.
+
+
+4. PRODUCT HEALTH EVENTS
+
+Only after privacy review, consider aggregate events for:
+
+- Graph load succeeded/failed
+- Search produced/selected a result
+- Filter applied
+- Layout completed/failed
+- Connection mutation succeeded/failed
+- Decommission flow confirmed/cancelled/failed
+
+Analytics is not required for the frontend-only MVP. Do not add it without a
+clear question, data owner, retention, and user/privacy policy.
+
+
+5. EVENT CONTEXT
+
+Safe candidate context:
+
+- Application version/build ID
+- Feature and operation
+- Error code
+- Browser/OS category
+- Node-count and edge-count buckets
+- Selected layout
+- Duration bucket
+- Correlation/request ID
+
+Exclude by default:
+
+- Tokens and credentials
+- Full device/connection payloads
+- Potentially sensitive device names
+- User-entered search content
+- Unreviewed URLs or query strings
+
+
+6. DASHBOARDS
+
+When production exists, define dashboards for:
+
+- Release health and error rate
+- Graph-load success and latency
+- Layout latency by dataset-size bucket
+- Mutation failure rate
+- Browser-specific regressions
+
+Every dashboard requires an owner and a documented action when a threshold is
+crossed.
+
+
+7. ALERTING
+
+Alert on actionable symptoms rather than every individual client error.
+Potential alerts:
+
+- Material increase in fatal startup failures
+- Sustained repository/API failure rate
+- New high-volume unexpected error after release
+- Severe graph-ready latency regression
+
+Exact thresholds, notification destinations, schedules, and ownership are
+pending deployment/provider selection.
+
+
+8. DEVELOPMENT DIAGNOSTICS
+
+Development builds may expose a safe diagnostics panel/log containing:
+
+- Loaded/visible device and connection counts
+- Active filters and layout
+- Last graph batch size/duration
+- Validation failures
+- Cytoscape lifecycle status
+
+Do not ship verbose diagnostics enabled by default in production.
+
+
+9. RETENTION AND PRIVACY
+
+Before selecting a provider, document:
+
+- Data fields
+- Storage region
+- Retention period
+- Access roles
+- Redaction rules
+- User disclosure/consent requirements
+- Deletion process
+
+
+10. RELEASE CORRELATION
+
+All production error and performance events should include the application
+version/build ID. Releases should be marked in the provider so regressions can
+be connected to a specific artifact and rollback decision.
+

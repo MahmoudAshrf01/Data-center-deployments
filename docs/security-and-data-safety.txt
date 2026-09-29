@@ -1,0 +1,128 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Security and Data Safety
+
+Status: Proposed
+Scope: Frontend-only MVP plus future-backend readiness
+
+
+1. TRUST MODEL
+
+Mock fixtures shipped with the application are controlled input. Any future
+file import, URL parameter, browser storage, API response, or live event is
+untrusted and must be validated before entering domain state.
+
+The frontend is not an authorization boundary. When a backend is introduced,
+the server must authorize every read and mutation.
+
+
+2. INPUT VALIDATION
+
+- Validate graph snapshots and external events with Zod.
+- Reject unsupported schema versions.
+- Enforce reasonable maximum string lengths and dataset sizes.
+- Validate IDs and relationships before domain mutation.
+- Reject NaN, infinity, invalid progress, and orphan endpoints.
+- Do not accept client-side validation as sufficient server protection later.
+
+
+3. CONTENT RENDERING
+
+- Render device names and error text as React text, not injected HTML.
+- Do not use dangerouslySetInnerHTML for graph metadata.
+- Sanitize any future rich content with a reviewed sanitizer and strict policy.
+- Validate external URLs before rendering navigable links.
+- Avoid evaluating expressions or scripts from imported graph data.
+
+
+4. DATA VOLUME AND DENIAL OF SERVICE
+
+- Set explicit limits before adding file import.
+- Check file size before parsing where the browser API permits it.
+- Bound node, edge, label, and string sizes.
+- Offer subgraph loading for server datasets.
+- Cancel stale requests and obsolete heavy computations.
+- Move blocking parsing only to a worker; a worker does not replace size limits.
+
+
+5. CLIENT STORAGE
+
+- Do not persist sensitive production topology in localStorage by default.
+- Document every persisted key, purpose, lifetime, and clearing behavior.
+- Treat browser storage as readable by scripts running in the origin.
+- Never store access tokens in graph state or logs.
+- Clear account-specific caches when future account context changes.
+
+
+6. DEPENDENCIES AND SUPPLY CHAIN
+
+- Commit the package-manager lockfile.
+- Pin the supported Node and package-manager versions.
+- Run dependency vulnerability scanning in CI.
+- Review new runtime dependencies for maintenance, license, size, and scope.
+- Prefer direct, maintained packages over unnecessary wrappers.
+- Keep Cytoscape extensions limited and explicitly registered.
+
+
+7. BROWSER SECURITY
+
+Production hosting should define:
+
+- Content-Security-Policy appropriate to the built assets
+- X-Content-Type-Options: nosniff
+- Referrer-Policy
+- Permissions-Policy
+- Frame-ancestors protection through CSP
+- HTTPS and secure transport controls
+
+The exact policy must be tested against Vite output, fonts, monitoring, and any
+future API endpoints. Do not publish an untested copied policy.
+
+
+8. FUTURE API SECURITY
+
+- Authenticate with an approved secure mechanism.
+- Authorize at device/tenant/resource level on the server.
+- Protect mutations against cross-site request forgery if cookie auth is used.
+- Validate all payloads again on the server.
+- Rate-limit expensive graph queries and mutations.
+- Use pagination/subgraph queries rather than unrestricted full exports.
+- Do not expose internal stack traces or secrets in API errors.
+
+
+9. LOGGING AND PRIVACY
+
+- Never log tokens, credentials, or full sensitive payloads.
+- Use opaque IDs where possible in telemetry.
+- Document telemetry fields and retention before enabling a provider.
+- Redact device names if they may reveal sensitive infrastructure naming.
+- Make production debug logging opt-in and time-bounded.
+
+
+10. DESTRUCTIVE ACTION SAFETY
+
+- Name the target and impact before decommission/removal confirmation.
+- Prevent duplicate mutation submission.
+- Keep state atomic: no orphan edges after device removal.
+- Prefer idempotent future server mutation contracts.
+- Add audit events when a real multi-user backend exists.
+
+
+11. SECURITY REVIEW TRIGGERS
+
+Perform a focused review when adding:
+
+- Authentication or a backend
+- File import/export
+- Shared links
+- Browser persistence of graph data
+- Rich text or user-authored HTML
+- Third-party analytics/monitoring
+- Plugin or extension loading
+- Multi-tenancy or real production topology
+
+
+12. INCIDENT CONTACT
+
+No security contact or disclosure process is defined yet. Add SECURITY.md with
+private reporting instructions before public distribution.
+

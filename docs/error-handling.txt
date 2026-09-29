@@ -1,0 +1,160 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Error-Handling Specification
+
+Status: Proposed
+
+
+1. GOALS
+
+- Keep graph state internally consistent.
+- Give users a useful next action.
+- Separate expected domain failures from unexpected defects.
+- Preserve technical context without exposing sensitive details.
+
+
+2. ERROR CATEGORIES
+
+Validation error
+  Invalid external data or form input. Show field/snapshot details and prevent
+  mutation.
+
+Domain conflict
+  The request violates a business rule, such as a duplicate connection or
+  invalid status transition. Explain the rule and preserve current state.
+
+Not found/stale selection
+  A referenced device or connection no longer exists. Clear stale UI state,
+  refresh the projection if appropriate, and explain the change.
+
+Repository/transport error
+  Loading or mutation failed. Preserve recoverable input and offer retry.
+
+Layout/rendering error
+  A graph layout or renderer action failed. Keep data available through the
+  accessible list/table and offer a safe fallback layout/retry.
+
+Unexpected application error
+  A programming defect or unclassified failure. Use an error boundary at the
+  application or major-workspace boundary and offer reload/recovery.
+
+
+3. TYPED DOMAIN RESULTS
+
+Expected command failures should use a discriminated result, for example:
+
+  type Result<T, E extends AppError> =
+    | { ok: true; value: T }
+    | { ok: false; error: E };
+
+Suggested error shape:
+
+  interface AppError {
+    code: string;
+    userMessage: string;
+    retryable: boolean;
+    cause?: unknown;
+    context?: Record<string, unknown>;
+  }
+
+Do not use thrown exceptions for normal form validation or known domain rules.
+Unexpected library/runtime failures may be caught and converted at boundaries.
+
+
+4. MESSAGE RULES
+
+Messages should:
+
+- Say what failed.
+- Say what was or was not changed.
+- Offer retry, cancel, clear filters, or reload when appropriate.
+- Name the affected device/connection when safe.
+- Avoid stack traces, HTTP jargon, and blame.
+
+Example:
+
+  Could not add the connection. No changes were made. Try again.
+
+
+5. FEATURE BEHAVIOR
+
+Initial load failure:
+
+- Replace the workspace with a clear error state.
+- Offer retry for retryable repository failures.
+- For invalid mock data, identify schema errors in development logs.
+
+Search/filter failure:
+
+- Local search and filters should not normally fail.
+- Empty results are not errors.
+- A future remote failure preserves the query and offers retry.
+
+Mutation failure:
+
+- Disable duplicate submission while pending.
+- Preserve entered values.
+- Revert optimistic state or use confirmed updates initially.
+- Ensure Cytoscape and application state reconcile to the same result.
+
+Decommission failure:
+
+- Do not remove the device unless completion succeeds.
+- Restore an allowed stable status or mark a clear recoverable failure according
+  to the future backend contract.
+- Never leave active orphan connections.
+
+Layout failure:
+
+- Stop busy state.
+- Keep existing positions when possible.
+- Offer grid as a simple fallback.
+
+
+6. NOTIFICATIONS
+
+- Inline validation appears near the related control.
+- Page/workspace errors use an inline error state.
+- Short operation feedback can use a toast/snackbar.
+- Confirmation dialogs are not replaced by transient notifications.
+- Avoid showing the same error simultaneously in multiple surfaces.
+- Notifications must be keyboard and screen-reader accessible.
+
+
+7. LOGGING
+
+Development logs may include stack/cause and safe structured context.
+Production reporting may include:
+
+- Error code
+- Feature/operation
+- Application version
+- Browser class
+- Dataset-size bucket
+- Correlation/request ID when available
+
+Do not include secrets, tokens, or unreviewed full device payloads.
+
+
+8. RETRY POLICY
+
+- Retry only operations likely to succeed later.
+- Do not automatically retry validation or domain conflicts.
+- Bound automatic retries and use backoff for a future backend.
+- User-triggered retry must not duplicate a successful prior mutation; future
+  mutation APIs should support idempotency where appropriate.
+
+
+9. TEST REQUIREMENTS
+
+Test at least:
+
+- Invalid initial snapshot
+- Empty valid graph
+- Duplicate/missing connection endpoint
+- Load failure and retry
+- Mutation failure without inconsistent graph state
+- Decommission failure
+- Layout failure and fallback
+- Unexpected render error boundary
+- Accessible error announcement and focus behavior
+

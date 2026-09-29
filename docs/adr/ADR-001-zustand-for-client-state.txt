@@ -1,0 +1,34 @@
+ADR-001: Zustand for Client State
+
+Status: Accepted
+Date: 2026-09-29
+
+Context
+
+The frontend-only MVP needs shared graph entities, selection, filters, layout,
+deployment simulation, and mutations. Frequent device progress updates require
+narrow subscriptions. The original brief explicitly avoids Redux complexity.
+
+Decision
+
+Use Zustand for client-owned graph and view state. Keep normalized domain graph
+state separate from view state. Components subscribe through narrow selectors.
+Keep Cytoscape instances, timers, DOM nodes, and future server caches outside
+the Zustand stores.
+
+Consequences
+
+- Low setup/boilerplate and straightforward TypeScript actions.
+- Store structure and invariant enforcement remain the team's responsibility.
+- Normalization and adjacency indexes must be implemented deliberately.
+- Devtools/persistence middleware may be added only for a clear requirement.
+
+Alternatives considered
+
+- React Context: simple but unsuitable as the primary frequently-updated graph
+  store without additional subscription design.
+- Redux Toolkit: strong tooling/entity patterns but unnecessary for the agreed
+  MVP and excluded by the original brief.
+- Component-local state: cannot coordinate graph, panels, simulation, and
+  summary reliably.
+

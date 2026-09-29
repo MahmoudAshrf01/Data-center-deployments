@@ -1,0 +1,216 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Product Requirements Document
+
+Status: Proposed
+Source: data-center-deployment-visualizer-project-brief.txt
+
+
+1. PRODUCT SUMMARY
+
+The Data Center Deployment Visualizer helps an infrastructure operator inspect
+hardware devices and relationships, understand deployment state, manage direct
+connections, and assess the immediate impact of decommissioning a device.
+
+The MVP is a frontend-only single-user workspace using validated mock data and
+simulated deployment events. It should behave like a credible product rather
+than a graph-library demonstration.
+
+
+2. TARGET USER
+
+Primary user: a data-center deployment or operations engineer who needs a quick
+visual understanding of device topology and rollout status.
+
+MVP assumptions:
+
+- One local user
+- No authentication or authorization
+- No collaboration or concurrent editing
+- No backend persistence
+- No regulated or confidential production data
+
+
+3. USER OUTCOMES
+
+The user can:
+
+- Understand which devices and relationships are currently loaded.
+- Find a device quickly and inspect its state.
+- Identify deployed, deploying, pending, failed, and decommissioning devices.
+- See direct dependencies before changing a device.
+- Add or remove a relationship with immediate visual feedback.
+- Review and confirm the impact of decommissioning.
+- Monitor aggregate deployment progress.
+- Use core functionality without relying exclusively on the graph canvas.
+
+
+4. MVP SCOPE
+
+Included:
+
+- Device types: server, switch, storage, and rack
+- Statuses: pending, deploying, deployed, failed, and decommissioning
+- Interactive Cytoscape graph
+- Pan, zoom, fit, node movement, and node selection
+- Device details panel
+- Search by device name or ID
+- Filtering by status and type
+- Selected/directly-connected highlighting
+- Mock deployment progression
+- Add and remove connection
+- Direct-connection decommission impact
+- Confirmation before decommissioning
+- Deployment summary and overall progress
+- Grid, circle, breadth-first, and cose layouts
+- Accessible synchronized device list/table
+- Responsive desktop-first interface
+
+Deferred:
+
+- Authentication and role-based authorization
+- Backend/database persistence
+- Real WebSocket or server-sent events
+- Concurrent editing
+- Multi-hop impact policies
+- Audit history and undo/redo
+- Saved views and saved layouts
+- Import/export, unless separately approved
+- Mobile-first graph editing
+- Multiple sites/tenants
+
+
+5. FUNCTIONAL REQUIREMENTS
+
+FR-01 Graph initialization
+
+- The app validates the initial dataset before displaying it.
+- Valid devices become nodes and valid connections become edges.
+- Invalid graph data produces a recoverable error, not a blank crash.
+
+FR-02 Graph navigation
+
+- The user can pan, zoom, fit, and reposition nodes.
+- Graph controls are labeled and keyboard accessible where applicable.
+- Changing a device status must not automatically reposition the graph.
+
+FR-03 Device selection
+
+- Selecting a node selects exactly one device.
+- The details panel shows ID, name, type, rack, status, progress, and direct
+  connections.
+- Selection is synchronized between graph and accessible list/table.
+
+FR-04 Search
+
+- Search matches device name and ID case-insensitively.
+- Selecting a result reveals, selects, and focuses the device, then opens its
+  details.
+- No-result feedback is explicit.
+
+FR-05 Filters
+
+- The user can filter by status and type.
+- Filters change visibility, not the underlying graph data.
+- An edge is visible only when both endpoints are visible.
+- The user can clear all filters.
+
+FR-06 Relationship highlighting
+
+- The selected node, its direct neighbors, and their connecting edges are
+  visually distinct.
+- Unrelated visible elements are de-emphasized.
+- Clearing selection restores normal emphasis.
+
+FR-07 Deployment simulation
+
+- A centralized simulator updates deploying devices over time.
+- Progress remains between 0 and 100.
+- A deploying device reaching 100 becomes deployed.
+- Simulation can be made deterministic in automated tests.
+
+FR-08 Add connection
+
+- The user selects valid, different endpoints.
+- The app prevents missing endpoints and disallowed duplicates.
+- A successful connection updates state, adjacency indexes, details, and graph.
+
+FR-09 Remove connection
+
+- The user can choose an existing connection for removal.
+- The app confirms destructive removal when product design requires it.
+- State, adjacency indexes, details, and graph update together.
+
+FR-10 Decommission device
+
+- The action is unavailable when a device is already decommissioning.
+- The app calculates and lists direct affected connections/devices.
+- The user can cancel without mutation.
+- Confirmation changes status to decommissioning.
+- Completion removes or archives the node according to the configured MVP
+  policy and removes/deactivates its connections atomically.
+
+MVP decision required before implementation: choose permanent removal from the
+current local graph or hidden/archived state. Until chosen, use removal after
+the simulated completion and keep the transition testable.
+
+FR-11 Summary
+
+- Show total, deployed, deploying, pending, and failed device counts.
+- Show overall deployment progress.
+- Clearly label whether values describe all loaded or currently visible data.
+
+FR-12 Layout selection
+
+- The user can choose grid, circle, breadth-first, or cose.
+- A layout does not change domain data.
+- Long-running layouts expose progress/busy feedback where possible.
+
+
+6. BUSINESS RULES
+
+- IDs are unique and stable.
+- Connections reference existing devices.
+- Self-connections are disallowed in the MVP.
+- Duplicate endpoint/type connections are disallowed in the MVP.
+- Progress is finite and within 0 through 100.
+- Deployed implies progress 100.
+- A failed device retains its last valid progress.
+- Decommissioning cannot be started twice.
+- Device deletion/removal cannot leave orphan connections.
+- Rack membership and network/storage connections are represented explicitly;
+  the UI must not infer a physical dependency from display proximity.
+
+
+7. NON-FUNCTIONAL REQUIREMENTS
+
+- TypeScript strict mode is enabled.
+- Core workflows meet docs/accessibility-requirements.txt.
+- Graph behavior follows docs/performance-and-scaling.txt.
+- Expected errors are recoverable and follow docs/error-handling.txt.
+- External or imported data is validated with Zod.
+- Important domain behavior is testable without a browser canvas.
+- The application supports current stable versions of agreed evergreen desktop
+  browsers; exact browser versions must be recorded during scaffolding.
+
+
+8. MVP SUCCESS CRITERIA
+
+- All FR-01 through FR-12 acceptance flows pass.
+- No high-severity accessibility issue exists in primary workflows.
+- Unit, integration, and critical Cypress suites pass in CI.
+- The production build succeeds with no TypeScript errors.
+- The representative medium dataset meets agreed interactive performance goals.
+- No default MUI visual styling appears in the accepted design.
+
+
+9. OPEN PRODUCT DECISIONS
+
+- Final behavior after decommission completion: remove or archive/hide.
+- Whether summary metrics follow filters or always describe all loaded data.
+- Which connection types are legal between each pair of device types.
+- Whether node positions must persist across reloads.
+- Exact supported browser matrix.
+- Exact performance thresholds and reference hardware.
+
+Resolve each material decision before its feature is considered complete.
+

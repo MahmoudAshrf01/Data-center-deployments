@@ -1,0 +1,242 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Data Model and Contracts
+
+Status: Proposed
+
+
+1. PURPOSE
+
+Define one shared vocabulary and validation boundary for domain state,
+repositories, mock data, graph rendering, and a future backend.
+
+
+2. CORE TYPES
+
+  type DeviceId = string;
+  type ConnectionId = string;
+
+  type DeviceType = "server" | "switch" | "storage" | "rack";
+
+  type DeviceStatus =
+    | "pending"
+    | "deploying"
+    | "deployed"
+    | "failed"
+    | "decommissioning";
+
+  type ConnectionType = "network" | "storage" | "contains";
+  type ConnectionStatus = "active" | "inactive";
+
+  interface Device {
+    id: DeviceId;
+    name: string;
+    type: DeviceType;
+    status: DeviceStatus;
+    rackId: DeviceId | null;
+    progress: number;
+  }
+
+  interface Connection {
+    id: ConnectionId;
+    sourceId: DeviceId;
+    targetId: DeviceId;
+    type: ConnectionType;
+    status: ConnectionStatus;
+  }
+
+  interface GraphSnapshot {
+    schemaVersion: 1;
+    devices: Device[];
+    connections: Connection[];
+  }
+
+
+3. NORMALIZED CLIENT MODEL
+
+  interface NormalizedGraph {
+    devicesById: Record<DeviceId, Device>;
+    connectionsById: Record<ConnectionId, Connection>;
+    connectionIdsByDeviceId: Record<DeviceId, ConnectionId[]>;
+  }
+
+Device does not contain connectedDevices. Connections are authoritative. The
+adjacency index is derived and maintained atomically with connection mutations.
+
+
+4. VALIDATION RULES
+
+Device:
+
+- id: trimmed, non-empty, unique
+- name: trimmed, non-empty
+- type: allowed enum value
+- status: allowed enum value
+- rackId: null or an existing rack device ID
+- progress: finite number from 0 to 100
+- deployed status requires progress 100
+
+Connection:
+
+- id: trimmed, non-empty, unique
+- sourceId and targetId: existing device IDs
+- sourceId differs from targetId
+- type and status: allowed enum values
+- duplicate source/target/type relationships are rejected regardless of endpoint
+  order when the connection type is undirected
+
+Snapshot:
+
+- schemaVersion must be supported
+- all nested entities pass schema validation
+- referential-integrity validation runs after field validation
+- invalid snapshots are not partially committed unless a future import feature
+  explicitly defines partial-import behavior
+
+
+5. STATUS TRANSITIONS
+
+Allowed MVP transitions:
+
+  pending -> deploying
+  pending -> failed
+  deploying -> deployed
+  deploying -> failed
+  failed -> deploying
+  deployed -> decommissioning
+  failed -> decommissioning
+  pending -> decommissioning
+  decommissioning -> removed from active graph
+
+Any additional transition requires a product decision and domain test.
+
+
+6. DOMAIN COMMANDS
+
+Commands express intent and enforce invariants:
+
+  addConnection(input)
+  removeConnection(connectionId)
+  updateDeviceProgress(deviceId, progress)
+  changeDeviceStatus(deviceId, nextStatus)
+  beginDecommission(deviceId)
+  completeDecommission(deviceId)
+  replaceGraph(snapshot)
+
+Commands return a typed success/failure result. Components must not directly
+mutate normalized records.
+
+
+7. GRAPH CHANGE CONTRACT
+
+The application store communicates incremental visual changes to the graph
+adapter with a discriminated union such as:
+
+  type GraphChange =
+    | { type: "device-added"; device: Device }
+    | { type: "device-updated"; device: Device }
+    | { type: "device-removed"; deviceId: DeviceId }
+    | { type: "connection-added"; connection: Connection }
+    | { type: "connection-updated"; connection: Connection }
+    | { type: "connection-removed"; connectionId: ConnectionId };
+
+Batch transport uses readonly GraphChange[]. Replacing the complete graph is a
+separate explicit operation, not the default response to a small change.
+
+
+8. REPOSITORY INTERFACE
+
+The frontend-only implementation uses an in-memory/mock repository behind this
+conceptual contract:
+
+  interface GraphRepository {
+    getGraph(signal?: AbortSignal): Promise<GraphSnapshot>;
+    addConnection(input: AddConnectionInput): Promise<Connection>;
+    removeConnection(id: ConnectionId): Promise<void>;
+    beginDecommission(id: DeviceId): Promise<DecommissionResult>;
+  }
+
+Feature code depends on the interface, not fixture modules. MSW can provide an
+HTTP-shaped implementation before a real backend exists.
+
+
+9. FUTURE HTTP CONTRACT DIRECTION
+
+Potential resource paths, not yet implemented:
+
+  GET    /graph
+  GET    /devices?query=&status=&type=&rackId=
+  GET    /devices/{deviceId}/neighbors?depth=1
+  POST   /connections
+  DELETE /connections/{connectionId}
+  POST   /devices/{deviceId}/decommission
+
+Do not treat these paths as an approved backend API until backend ownership,
+pagination, authorization, errors, and versioning are reviewed.
+
+
+10. FUTURE LIVE EVENT ENVELOPE
+
+Suggested versioned shape:
+
+  interface GraphEvent<TType extends string, TPayload> {
+    eventId: string;
+    type: TType;
+    occurredAt: string;
+    schemaVersion: 1;
+    payload: TPayload;
+  }
+
+Potential events:
+
+- device.progress.updated
+- device.status.changed
+- device.removed
+- connection.created
+- connection.removed
+
+Consumers must tolerate duplicate event delivery using eventId and must define
+ordering/version behavior before real-time transport is implemented.
+
+
+11. EXAMPLE SNAPSHOT
+
+  {
+    "schemaVersion": 1,
+    "devices": [
+      {
+        "id": "rack-a",
+        "name": "Rack A",
+        "type": "rack",
+        "status": "deployed",
+        "rackId": null,
+        "progress": 100
+      },
+      {
+        "id": "server-01",
+        "name": "Server 01",
+        "type": "server",
+        "status": "deploying",
+        "rackId": "rack-a",
+        "progress": 65
+      }
+    ],
+    "connections": [
+      {
+        "id": "contains-rack-a-server-01",
+        "sourceId": "rack-a",
+        "targetId": "server-01",
+        "type": "contains",
+        "status": "active"
+      }
+    ]
+  }
+
+
+12. VERSIONING
+
+- GraphSnapshot carries schemaVersion.
+- Breaking persisted/imported schema changes increment the version.
+- Zod schemas are the runtime authority and TypeScript types should be inferred
+  from them where practical.
+- A migration function is required before accepting an older schema version.
+

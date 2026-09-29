@@ -1,0 +1,127 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Release and Deployment Guide
+
+Status: Template; hosting and CI providers are not selected
+
+
+1. ENVIRONMENTS
+
+Recommended:
+
+- Local: developer machine and mock data
+- Preview: immutable build for each reviewed change
+- Production: approved release artifact
+
+If a staging environment is added, document how its data and configuration
+differ from production.
+
+
+2. BUILD PRINCIPLE
+
+Build once and promote the same immutable artifact where the hosting platform
+allows it. Do not produce different source code for preview and production.
+Runtime/API configuration strategy must be documented when a backend exists.
+
+
+3. REQUIRED CI GATES
+
+- Dependency install using the committed lockfile
+- TypeScript typecheck
+- ESLint
+- Prettier check
+- Vitest suite
+- Production build
+- Cypress critical-path tests
+- Dependency/security scan
+
+Add accessibility and bundle/performance budgets once their tooling is chosen.
+
+
+4. VERSIONING
+
+Use semantic versioning after the first distributable release:
+
+- Patch: compatible fixes
+- Minor: compatible functionality
+- Major: incompatible product/contracts changes
+
+Until then, maintain an Unreleased section in CHANGELOG.md.
+
+
+5. RELEASE PROCESS
+
+1. Confirm all required CI gates pass.
+2. Confirm requirements and docs match behavior.
+3. Review open high-severity defects and security findings.
+4. Verify preview build manually on supported browsers.
+5. Update CHANGELOG.md.
+6. Create the release version/tag according to team policy.
+7. Deploy/promote the immutable artifact.
+8. Run production smoke checks.
+9. Monitor errors and performance during the defined observation window.
+
+
+6. PRODUCTION SMOKE CHECKS
+
+- Application loads without console/runtime failure.
+- Mock/API graph data loads and validates.
+- Graph and device list/table appear.
+- Search, filter, select, and details work.
+- Add/remove connection works in the allowed environment.
+- Decommission confirmation opens; avoid destructive production mutation unless
+  a designated test fixture/account exists.
+- Static assets and font load correctly.
+- Error reporting receives a safe test event if provider policy permits it.
+- Security headers are present and compatible.
+
+
+7. ROLLBACK
+
+The hosting platform must support reverting to the previous known-good artifact
+or deployment. Before production launch, record:
+
+- Exact rollback command or console procedure
+- Required permissions
+- Expected completion time
+- Owner/on-call contact
+- Data compatibility risks
+
+A frontend rollback cannot undo backend mutations. When a backend exists,
+coordinate contract compatibility and database migration rollback separately.
+
+
+8. CONFIGURATION
+
+No production environment variables are defined yet. Add a reviewed table when
+they exist:
+
+  name | purpose | required | environment | secret? | owner
+
+Browser-exposed configuration is public even when delivered via environment
+variables during build.
+
+
+9. CACHE AND ASSET POLICY
+
+Recommended for a content-hashed Vite build:
+
+- Hashed static assets: long-lived immutable caching
+- HTML entry document: short/no-cache policy appropriate to the host
+- Source maps: publish only according to the error-monitoring and privacy policy
+
+Verify actual host behavior before release.
+
+
+10. OWNERSHIP GAPS
+
+Must be selected before production:
+
+- CI provider and workflow
+- Hosting platform
+- Domain/TLS owner
+- Release approver
+- Rollback owner
+- Monitoring provider and alert destination
+- Supported browser matrix
+- Incident response contact
+

@@ -1,0 +1,126 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Documentation Index
+
+Status labels:
+
+- Approved: accepted project direction
+- Proposed: intended direction that may change during implementation
+- Living: updated continuously as the application changes
+- Template: incomplete until deployment or operational systems exist
+
+
+PRODUCT
+
+Project brief
+  Path: data-center-deployment-visualizer-project-brief.txt
+  Status: Approved input
+  Purpose: Original scope and requested capabilities.
+
+Product requirements
+  Path: product-requirements.txt
+  Status: Proposed
+  Purpose: Requirements, scope, user stories, rules, and acceptance criteria.
+
+UX flows and acceptance criteria
+  Path: ux-flows-and-acceptance-criteria.txt
+  Status: Proposed
+  Purpose: End-to-end workflows, empty/error states, and measurable outcomes.
+
+
+ARCHITECTURE AND DESIGN
+
+Frontend architecture
+  Path: frontend-architecture.txt
+  Status: Proposed baseline
+  Purpose: Modules, dependency direction, state, Cytoscape integration, and
+  implementation phases.
+
+Architecture decision records
+  Path: adr/
+  Status: Approved decisions unless superseded
+  Purpose: Explain significant technical choices and their consequences.
+
+Clean Code and SOLID principles
+  Path: clean-code-and-solid-principles.txt
+  Status: Approved engineering policy
+  Purpose: Naming, functions, types, modules, React/state rules, SOLID guidance,
+  and source material for future Cursor rules.
+
+Data model and contracts
+  Path: data-model-and-contracts.txt
+  Status: Proposed
+  Purpose: Entity definitions, invariants, schemas, repository interface, and
+  future transport contracts.
+
+Tailwind design system
+  Path: design-system.tailwind.js
+  Status: Approved visual reference
+  Purpose: Canonical visual tokens and component recipes.
+
+Design-system integration
+  Path: design-system-integration.txt
+  Status: Proposed
+  Purpose: Tailwind/MUI ownership, token mapping, and UI review requirements.
+
+
+QUALITY AND NON-FUNCTIONAL REQUIREMENTS
+
+Testing strategy
+  Path: testing-strategy.txt
+  Status: Proposed
+  Purpose: Test levels, responsibilities, data, coverage, and CI checks.
+
+Performance and scaling
+  Path: performance-and-scaling.txt
+  Status: Proposed
+  Purpose: Dataset profiles, metrics, graph optimizations, and acceptance
+  process.
+
+Accessibility requirements
+  Path: accessibility-requirements.txt
+  Status: Proposed
+  Purpose: Keyboard, focus, semantics, color, graph alternatives, and testing.
+
+Security and data safety
+  Path: security-and-data-safety.txt
+  Status: Proposed
+  Purpose: Trust boundaries, validation, browser safety, dependencies, and
+  future backend considerations.
+
+Error handling
+  Path: error-handling.txt
+  Status: Proposed
+  Purpose: Error taxonomy, recovery, messages, logging, and feature behavior.
+
+
+ENGINEERING AND OPERATIONS
+
+Developer guide
+  Path: developer-guide.txt
+  Status: Living; setup commands pending scaffold
+  Purpose: Local workflow, code conventions, feature process, and quality gates.
+
+Release and deployment
+  Path: release-and-deployment.txt
+  Status: Template
+  Purpose: Environments, CI/CD, release, verification, and rollback.
+
+Observability
+  Path: observability.txt
+  Status: Proposed; provider selection pending
+  Purpose: Errors, performance signals, privacy, dashboards, and alerts.
+
+Changelog
+  Path: ../CHANGELOG.md
+  Status: Living
+  Purpose: Human-readable history of notable changes.
+
+
+DOCUMENT MAINTENANCE RULES
+
+- A feature is not complete when its behavior contradicts these documents.
+- Update requirements and contracts in the same change as affected code.
+- Add or supersede an ADR when changing an architectural decision.
+- Do not rewrite an accepted ADR to hide history.
+- Mark unknown operational details explicitly rather than inventing values.
+- Review links and status labels before a release.

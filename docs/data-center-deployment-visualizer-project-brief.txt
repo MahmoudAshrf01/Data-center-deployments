@@ -1,0 +1,349 @@
+Data Center Deployment Visualizer
+Mini Project Brief
+
+1. Project Overview
+
+The project is a frontend application that visualizes hardware devices and their relationships inside a data center.
+
+The main goal is to use Cytoscape.js to represent devices such as servers, switches, storage units, and racks as nodes, and their relationships as edges.
+
+The application should help a user understand:
+- Which devices are connected
+- The current deployment status of each device
+- Which devices are still deploying, failed, pending, or deployed
+- What other devices may be affected before decommissioning a device
+
+This project should feel like a small real product, not just a Cytoscape.js demo.
+
+
+2. Main Goal
+
+Build a React + TypeScript application that demonstrates:
+
+- Cytoscape.js graph visualization
+- Nodes and edges
+- Dynamic data-driven UI
+- Device status updates
+- Graph interactions
+- Search and filtering
+- Device details
+- Connection management
+- Decommission impact analysis
+- Clean and maintainable frontend architecture
+
+
+3. Core Data Model
+
+Device types:
+- Server
+- Switch
+- Storage
+- Rack
+
+Each device should contain data such as:
+- ID
+- Name
+- Type
+- Status
+- Rack
+- Deployment progress
+- Connected devices
+
+Example:
+
+{
+  id: "server-01",
+  name: "Server 01",
+  type: "server",
+  status: "deployed",
+  rack: "Rack A",
+  progress: 100
+}
+
+
+4. Device Statuses
+
+The application should support:
+
+- Pending
+- Deploying
+- Deployed
+- Failed
+- Decommissioning
+
+The graph should visually distinguish these statuses.
+
+
+5. Required Features
+
+5.1 Graph Visualization
+
+Create a graph that displays the devices and their relationships.
+
+Example:
+
+Switch-01
+├── Server-01
+├── Server-02
+└── Server-03
+
+Server-02 ─── Storage-01
+
+Users should be able to:
+- Zoom
+- Pan
+- Select nodes
+- Move nodes
+- Fit the graph to the screen
+
+
+5.2 Device Details Panel
+
+When the user selects a node, display a side panel with details.
+
+Example:
+
+Server-02
+
+Type: Server
+Rack: Rack A
+Status: Deploying
+Progress: 65%
+
+Connected to:
+- Switch-01
+- Storage-01
+
+
+5.3 Search
+
+Add a search input.
+
+When a user searches for a device:
+- Find the node
+- Focus the graph on it
+- Highlight it
+- Open its details panel
+
+
+5.4 Filters
+
+Add filters for:
+
+Status:
+- All
+- Pending
+- Deploying
+- Deployed
+- Failed
+
+Type:
+- All
+- Server
+- Switch
+- Storage
+
+
+5.5 Connected Nodes Highlight
+
+When a node is selected:
+- Highlight the selected device
+- Highlight all directly connected nodes and edges
+- Reduce the opacity of unrelated nodes
+
+This feature should make graph relationships easy to understand.
+
+
+5.6 Mock Real-Time Deployment Updates
+
+Simulate deployment progress without a backend.
+
+Example:
+
+Server-02
+35%
+→ 48%
+→ 67%
+→ 82%
+→ 100%
+
+Then change its status:
+
+Deploying → Deployed
+
+Use mock data and timers to simulate real-time updates.
+
+
+5.7 Add Connection
+
+Allow the user to create a new relationship between two devices.
+
+Example:
+
+Server-03 ─── Storage-01
+
+The new edge should immediately appear in the graph.
+
+
+5.8 Remove Connection
+
+Allow the user to remove an existing edge between devices.
+
+
+5.9 Decommission Device
+
+This is one of the most important features.
+
+When the user selects a device and clicks Decommission:
+
+1. Find all connected devices.
+2. Display a warning.
+3. Show which connections may be affected.
+4. Ask for confirmation.
+
+Example:
+
+Decommission Server-02?
+
+This device has 3 active connections:
+
+- Switch-01
+- Storage-01
+- Monitoring-01
+
+These connections may be affected.
+
+Cancel | Confirm
+
+After confirmation:
+
+Deployed
+→ Decommissioning
+→ Removed
+
+The node can then be removed from the graph or hidden.
+
+
+5.10 Deployment Progress Summary
+
+Display a small dashboard above the graph.
+
+Example:
+
+Total Devices: 20
+Deployed: 12
+Deploying: 4
+Pending: 2
+Failed: 2
+
+Overall Progress: 60%
+
+
+5.11 Graph Layouts
+
+Allow the user to change the Cytoscape.js layout.
+
+Possible layouts:
+- Grid
+- Circle
+- Breadthfirst
+- Cose
+
+
+6. Suggested Tech Stack
+
+- React
+- TypeScript
+- Cytoscape.js
+- Material UI
+- Vite
+
+Optional later:
+- Vitest
+- React Testing Library
+
+
+7. Suggested Frontend Structure
+
+src/
+
+components/
+  Graph/
+    DataCenterGraph.tsx
+    graphStyles.ts
+
+  DeviceDetails/
+    DeviceDetailsDrawer.tsx
+
+  Filters/
+    GraphFilters.tsx
+
+  Header/
+    Header.tsx
+
+data/
+  devices.ts
+  connections.ts
+
+types/
+  device.ts
+
+hooks/
+  useGraphData.ts
+
+utils/
+  graphUtils.ts
+
+App.tsx
+
+
+8. MVP
+
+The minimum version should include:
+
+- Cytoscape.js graph
+- Nodes and edges
+- Different device statuses
+- Click node to open details
+- Search
+- Filters
+- Highlight connected nodes
+- Deployment progress
+- Mock real-time updates
+- Decommission action
+
+
+9. What Not to Build
+
+Do not spend time on:
+
+- Authentication
+- Backend
+- Database
+- Login/Register
+- Payments
+- Complex APIs
+- Redux
+- Docker
+
+The main focus is:
+
+React + TypeScript + Cytoscape.js + Graph Logic
+
+
+10. Final Product Experience
+
+A user should be able to:
+
+1. Open the application.
+2. See all data center devices and their relationships.
+3. Identify which devices are deployed, deploying, pending, or failed.
+4. Search for a specific device.
+5. Select a device and inspect its details.
+6. See all connected devices.
+7. Filter the graph.
+8. Watch deployment progress change.
+9. Add or remove device connections.
+10. Decommission a device and see which relationships may be affected.
+
+If the application can support this full workflow, the project will be a strong Cytoscape.js mini-project closely related to the target job description.

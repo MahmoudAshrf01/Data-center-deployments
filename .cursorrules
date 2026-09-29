@@ -1,0 +1,50 @@
+# Data Center Deployment Visualizer — Cursor Rules
+
+## Stack
+
+- React, TypeScript, Vite, Zustand, Zod
+- Cytoscape.js with Dagre (default), Grid, AVSDF, Concentric, Circle, Breadth-first, and Cose
+- MUI primitives customized with Tailwind CSS
+- Phosphor Icons via direct imports
+- Vitest, React Testing Library, Cypress, MSW, ESLint, and Prettier
+
+## Architecture
+
+- Keep domain logic framework-independent and validate external data with Zod.
+- Use feature-oriented modules under `src/features`.
+- Keep normalized graph state in Zustand with narrow selectors.
+- Keep imperative Cytoscape code inside `GraphCanvas`.
+- Prefer pure functions, explicit types, and small composable components.
+
+## UI rules
+
+- Use existing Tailwind tokens and shared UI components.
+- Use Phosphor icons instead of text glyphs or improvised SVGs.
+- Static cards must not have hover effects implying clickability.
+- Interactive controls need accessible labels and keyboard support.
+- Bound and search long menus; confirm destructive actions.
+- Keep toast surfaces neutral; use icon/accent color for state.
+- Preserve responsive behavior from mobile through large monitors.
+
+## Performance rules
+
+- Avoid full graph relayouts for status/progress-only updates.
+- Use `cy.batch()` for graph mutations and limit labels in dense views.
+- Keep dataset previews at 100/500/1,000 unless measured requirements change.
+- For production scale, cluster by rack/site and expand on demand.
+- Profile memory, layout time, and pan/zoom responsiveness before adding workers.
+
+## Verification
+
+Run before completing changes:
+
+```text
+npm run format:check
+npm run typecheck
+npm run lint
+npm test -- --run
+npm run build
+```
+
+Update relevant docs when architecture, UX behavior, data scale, or testing
+responsibilities change.

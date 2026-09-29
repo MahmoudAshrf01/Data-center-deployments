@@ -1,0 +1,214 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Design System and MUI Integration
+
+Status: Proposed
+
+
+1. DESIGN AUTHORITY
+
+The canonical visual reference is:
+
+  docs/design-system.tailwind.js
+
+Its colors, typography, radii, shadows, focus ring, and ui-* component recipes
+define the interface. Material UI's default appearance is not part of the
+product design.
+
+The current direction is:
+
+- Clean white cards on a near-white paper background
+- Zinc/ink text and borders
+- Emerald brand and success color
+- Blue informational state
+- Amber warning state
+- Red destructive state
+- Rounded 12px controls and 16px cards/panels
+- Restrained shadows and hover elevation
+- Compact, bold control labels
+- A subtle dark focus ring
+- Instrument Sans typography using locally hosted WOFF2 files
+
+
+2. COMPONENT OWNERSHIP
+
+Build with semantic HTML and Tailwind when behavior is simple:
+
+- Page shell and responsive layout
+- Cards and panels
+- Buttons
+- Status tags/badges
+- Basic text inputs
+- Summary statistics
+- Empty states
+- Device list/table presentation
+
+Use customized Material UI primitives when behavior is complex:
+
+- Dialog and confirmation dialog
+- Drawer
+- Menu and popover
+- Select/autocomplete when advanced behavior is needed
+- Tooltip
+- Focus trap and modal backdrop behavior
+- Snackbar, if the team accepts its interaction model
+
+Using MUI for behavior does not mean accepting its visual defaults.
+
+
+3. SHARED UI API
+
+Feature code should import application components, not raw MUI components.
+
+Suggested shared components:
+
+  src/shared/ui/
+    AppButton.tsx
+    AppCard.tsx
+    AppDialog.tsx
+    AppDrawer.tsx
+    AppInput.tsx
+    AppSelect.tsx
+    AppStatusTag.tsx
+    AppTooltip.tsx
+    index.ts
+
+Examples:
+
+  <AppButton variant="primary">Deploy</AppButton>
+  <AppButton variant="danger">Decommission</AppButton>
+  <AppStatusTag tone="warning">Deploying</AppStatusTag>
+
+Application variants use product language. They must not expose MUI-specific
+variant names or internal slot details to feature code.
+
+
+4. TOKEN MAPPING
+
+Tailwind token                 MUI theme destination
+----------------------------------------------------------------
+ink                            palette.text.primary
+mute                           palette.text.secondary
+paper                          palette.background.default
+card                           palette.background.paper
+line                           palette.divider
+brand.500/600/700              palette.primary light/main/dark
+info                           palette.info
+warning                        palette.warning
+destructive                    palette.error
+borderRadius.control           control component overrides
+borderRadius.card              card/dialog/drawer overrides
+boxShadow.card                 card default elevation
+boxShadow.card-hover           card hover state
+boxShadow.popover              dialog/menu/popover shadow
+fontFamily.sans                typography.fontFamily
+
+The MUI theme must reference these values. It must not introduce a second set
+of visually similar hard-coded colors.
+
+
+5. MUI CUSTOMIZATION POLICY
+
+Create a single theme module, for example:
+
+  src/app/theme/
+    tokens.ts
+    createAppTheme.ts
+    mui-components.ts
+
+Use it to define:
+
+- palette values mapped from the design system
+- typography and font family
+- shape defaults
+- component defaultProps
+- component styleOverrides
+- supported variants
+
+Customize internal MUI slots centrally. Use slotProps/className from wrapper
+components where appropriate. Avoid repeating selectors for MUI internals in
+feature files.
+
+Do not use MUI's numeric elevation presets as an uncontrolled design system.
+Map relevant surfaces to the card, card-hover, and popover shadows.
+
+Do not allow the default MUI blue primary color, default border radius, default
+button treatment, or default input treatment to appear.
+
+
+6. TAILWIND COMPONENT CLASSES
+
+The design file currently defines these public recipes:
+
+- ui-card
+- ui-panel
+- ui-button
+- ui-button-primary
+- ui-button-secondary
+- ui-button-ink
+- ui-button-ghost
+- ui-button-danger
+- ui-tag
+- ui-tag-neutral
+- ui-tag-success
+- ui-tag-info
+- ui-tag-warning
+- ui-tag-danger
+- ui-input
+
+These classes are the baseline visual contract. When a shared React component
+wraps them, the React component becomes the preferred feature-facing API.
+
+Keep class composition centralized with a small class-name helper. Add a
+variant library only if component combinations become difficult to maintain.
+
+
+7. DEVICE STATUS PRESENTATION
+
+Status must not rely on color alone.
+
+Suggested mapping:
+
+- Pending: neutral tag plus pending icon/text
+- Deploying: info tag plus progress value/indicator
+- Deployed: success tag plus success icon/text
+- Failed: danger tag plus error icon/text
+- Decommissioning: warning tag plus warning icon/text
+
+Cytoscape graph colors should derive from the same status tokens. Graph styles
+must also use shape, border, icon, or label differences where practical so the
+status remains understandable without color perception.
+
+
+8. FOCUS AND INTERACTION STATES
+
+- Preserve the focus-visible ring defined in the Tailwind design file.
+- Never remove focus outlines without providing an equivalent visible state.
+- Disabled controls retain readable text and expose the disabled attribute.
+- Hover must not be the only way to reveal required actions.
+- Dialogs and drawers must restore focus to their trigger when closed.
+- Destructive actions use the danger treatment and a clear confirmation step.
+
+
+9. CONFIGURATION NOTE
+
+docs/design-system.tailwind.js is currently the design reference. During
+project scaffolding, adapt its export/import syntax to the installed Tailwind
+major version and build integration without changing its visual tokens.
+
+Instrument Sans is loaded locally from public/fonts with regular (400), medium
+(500), and semibold (600) faces plus a system-font fallback. Add a true bold
+(700) WOFF2 file if the design requires a visibly stronger bold weight.
+
+
+10. REVIEW CHECKLIST
+
+Before accepting a UI feature, verify:
+
+- It matches the design-system tokens and recipes.
+- No recognizable default MUI styling leaks through.
+- Reusable behavior lives in a shared application component.
+- Feature code does not contain repeated MUI internal selectors.
+- Tailwind and MUI do not compete for the same CSS property.
+- Keyboard focus is visible.
+- Status and errors are understandable without color alone.
+- The component works at narrow and wide viewport sizes.

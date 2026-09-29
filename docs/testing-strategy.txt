@@ -1,0 +1,119 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Testing Strategy
+
+Status: Active baseline; updated 2026-09-30
+
+
+1. GOALS
+
+- Protect graph and deployment business rules with fast deterministic tests.
+- Test user-visible behavior without depending on component implementation.
+- Keep canvas-specific end-to-end tests small and valuable.
+- Ensure large-data changes do not silently introduce major regressions.
+
+
+2. TEST TOOL RESPONSIBILITIES
+
+Vitest:
+
+- Pure domain functions
+- Zustand store actions and selectors
+- Zod schemas
+- Graph adapter translation logic
+- Deployment simulator using fake timers
+
+React Testing Library:
+
+- Search and filters
+- Details drawer content
+- Summary cards
+- Add/remove connection forms
+- Decommission confirmation and errors
+- Keyboard interaction and accessible names
+- Dataset-size switching, table/card views, pagination, searchable connection
+  selectors, toast dismissal, and destructive-action confirmation.
+
+MSW:
+
+- Successful repository responses
+- Empty graphs
+- Validation failures
+- Network errors and retries
+- Delayed mutations and conflicting updates
+
+Cypress:
+
+- Load and explore the graph
+- Search, focus, and open device details
+- Filter by type/status and restore filters
+- Add and remove a connection
+- Confirm and cancel decommissioning
+- Observe a deployment reach 100 percent
+- Verify the accessible table stays synchronized with graph selection
+
+
+3. REQUIRED DOMAIN TESTS
+
+- Direct connection lookup handles incoming and outgoing edges.
+- Duplicate connections are rejected according to product rules.
+- Removing a device cleans attached connections and adjacency indexes.
+- Deployment summary counts and percentage are correct.
+- Progress cannot be below 0, above 100, NaN, or infinite.
+- Reaching 100 changes deploying to deployed.
+- Decommission impact returns the expected affected devices/connections.
+- Already-decommissioning devices cannot start the operation again.
+- Invalid endpoint IDs cannot create a connection.
+
+
+4. CYTOSCAPE TEST BOUNDARY
+
+Do not attempt to prove all graph behavior with canvas screenshots.
+
+- Unit-test conversion from domain entities to Cytoscape elements.
+- Unit-test the GraphAdapter against a narrow mocked Cytoscape interface.
+- Integration-test that application selection calls the adapter correctly.
+- Use a few Cypress tests to confirm real Cytoscape event integration.
+- Prefer assertions against visible panels, summaries, and accessible tables over
+  pixel coordinates.
+- Use visual regression testing only if it becomes a product requirement.
+
+
+5. TEST DATA
+
+Use builders to create valid entities with minimal overrides:
+
+  buildDevice({ status: "failed" })
+  buildConnection({ sourceId, targetId })
+
+Keep these fixture categories:
+
+- Tiny deterministic graph for unit tests
+- Representative multi-rack graph for integration/E2E tests
+- Generated datasets for performance checks
+- Invalid payload samples for schema validation
+
+Do not share mutable fixture objects between tests.
+
+
+6. COVERAGE POLICY
+
+Coverage is a diagnostic, not the goal. Require strong coverage for domain
+commands, schemas, selectors, and reducers/store actions. Do not write weak tests
+solely to increase a global percentage.
+
+Every bug fix should add a regression test at the lowest useful test level.
+
+
+7. CI CHECKS
+
+Every pull request should run:
+
+1. TypeScript typecheck
+2. ESLint
+3. Prettier check
+4. Vitest unit/integration suite
+5. Production build
+6. Cypress critical-path suite
+
+Performance stress tests may run separately or on scheduled CI because browser
+timing can be noisy on shared runners.

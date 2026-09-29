@@ -1,0 +1,37 @@
+ADR-003: Tailwind Visual Authority with Customized MUI
+
+Status: Accepted
+Date: 2026-09-29
+
+Context
+
+The product has a custom Tailwind design reference. Default Material UI styling
+does not match the desired appearance, but selected MUI components provide
+valuable accessible behavior for dialogs, drawers, menus, popovers, tooltips,
+and complex controls.
+
+Decision
+
+Treat docs/design-system.tailwind.js as the canonical visual system. Use
+semantic HTML and Tailwind for simple components. Use MUI selectively for
+complex interaction behavior, fully customized through a centralized theme,
+slot configuration, and shared App* wrapper components. Raw MUI imports are not
+allowed throughout feature code.
+
+Consequences
+
+- The application maintains a distinct product identity.
+- Accessible complex behaviors can reuse mature primitives.
+- Token mapping and MUI internal-slot overrides require maintenance.
+- The team must prevent Tailwind and MUI from styling the same property
+  unpredictably.
+- MUI default colors, shapes, elevations, and controls must not leak through.
+
+Alternatives considered
+
+- Default MUI: quickest but rejected on visual direction.
+- Tailwind-only custom implementation of every primitive: maximum visual
+  control but greater accessibility and interaction maintenance.
+- Separate independent Tailwind and MUI themes: creates drift and inconsistent
+  interfaces.
+

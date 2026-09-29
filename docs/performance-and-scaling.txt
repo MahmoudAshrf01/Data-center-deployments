@@ -1,0 +1,136 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Performance and Scaling Plan
+
+Status: Active guidance; updated 2026-09-30
+
+
+1. PRINCIPLE
+
+Performance must be measured with representative devices and connections. A
+graph with many edges can be more expensive than a larger graph with few edges,
+so node count alone is not a sufficient benchmark.
+
+
+2. DATASET PROFILES
+
+Maintain deterministic generated datasets such as:
+
+- Small: 100 devices with realistic connections
+- Medium: 1,000 devices with realistic connections
+- Large: 5,000 devices with realistic connections
+- Stress: product-specific upper-bound dataset
+
+These are benchmark profiles, not promises that every device will be rendered
+simultaneously. Define the stress profile after real production requirements are
+known.
+
+
+3. MEASURED OPERATIONS
+
+Record at least:
+
+- Time from data availability to interactive graph
+- Validation and normalization time
+- Layout duration
+- Search response time
+- Filter application time
+- Node selection/highlight time
+- Batch status-update time
+- Add/remove connection time
+- Decommission impact-calculation time
+- Pan and zoom responsiveness
+- Browser memory before load, after load, and after graph disposal
+
+Test on an agreed reference laptop/browser, not only a developer's fastest
+machine. Capture browser and hardware information with results.
+
+
+4. PERFORMANCE PRACTICES
+
+Data and state:
+
+- Normalize devices and connections by ID.
+- Maintain adjacency indexes.
+- Avoid full-array scans during frequent status updates.
+- Subscribe React components to narrow Zustand selectors.
+- Batch multiple update events before changing Cytoscape.
+
+Cytoscape rendering:
+
+- Keep a single long-lived instance.
+- Use getElementById for frequent direct lookups.
+- Use cy.batch for groups of changes.
+- Prefer simple shapes and straight edges.
+- Limit labels, overlays, compound nodes, and simultaneous animations.
+- Avoid layout runs for non-topology changes.
+- Consider a lower pixel ratio for large views.
+- Consider hiding edges during viewport interaction after measurement.
+
+Data presentation:
+
+- Load by site/rack/region when the full graph becomes too large.
+- Show a bounded neighborhood around a selected device.
+- Expand neighbors on demand.
+- Cluster or collapse groups.
+- Filter remotely when a backend is available.
+- Use precomputed positions for large stable topologies.
+
+Computation:
+
+- Profile before adding a worker.
+- Move parsing, normalization, clustering, or deep traversal to a worker only
+  when main-thread blocking is demonstrated.
+- Transfer compact serializable structures between worker and main thread.
+
+
+5. UPDATE COALESCING
+
+Live progress may generate many small events. Do not immediately redraw once for
+every incoming event when event volume grows.
+
+- Queue updates by device ID.
+- Keep only the latest progress value per device within the update window.
+- Flush the queue in a single store action and Cytoscape batch.
+- Preserve important state transitions even when intermediate progress values
+  are dropped.
+
+The batching window must be selected through measurement so the interface stays
+responsive without appearing stale.
+
+
+6. LAYOUT POLICY
+
+- Do not automatically run a layout for progress or status changes.
+- Run a layout after initial load or meaningful topology changes.
+- Let users opt into expensive layout changes.
+- Cancel or supersede an obsolete layout request where supported.
+- For large stable datasets, save or obtain precomputed positions.
+- Show a busy indicator and retain interaction where possible during a long
+  layout operation.
+
+
+7. PERFORMANCE ACCEPTANCE PROCESS
+
+Before declaring support for a dataset size:
+
+1. Generate a representative topology with realistic edge density.
+2. Run all measured operations on reference hardware.
+3. Inspect browser performance and memory profiles.
+4. Confirm graph disposal does not retain the old instance unexpectedly.
+5. Record results in the pull request or a benchmark report.
+6. If the target fails, reduce the rendered subgraph or visual complexity before
+   adding architectural complexity.
+
+
+8. WARNING SIGNS
+
+Investigate when any of these appear:
+
+- The Cytoscape instance is recreated during ordinary state changes.
+- One status update rebuilds all elements.
+- Selecting a node causes the entire page to rerender.
+- Each deploying device owns a separate interval timer.
+- Layout runs after every update.
+- Filters delete and later recreate domain data.
+- Hidden graph elements continue expensive animations.
+- Increasing data size causes retained memory after leaving the page.

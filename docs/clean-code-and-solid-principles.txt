@@ -1,0 +1,239 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+Clean Code and SOLID Principles
+
+Status: Approved engineering policy
+Purpose: Source material for implementation reviews and future Cursor rules
+
+
+1. CORE STANDARD
+
+Code should communicate intent, preserve architectural boundaries, and remain
+easy to test and change. Prefer the simplest design that correctly supports the
+known requirement. Do not add abstractions solely because they may be useful in
+an unspecified future.
+
+Rules in this document are defaults. A justified exception is allowed when it
+improves correctness, accessibility, performance, or maintainability and is
+made explicit in the change.
+
+
+2. NAMING
+
+- Use domain language: Device, Connection, GraphSnapshot, DecommissionImpact.
+- Use nouns for values/types and verbs for operations.
+- Name booleans as questions: isSelected, canDecommission, hasConnections.
+- Include units where ambiguity exists: timeoutMs, progressPercent.
+- Avoid generic names such as data, item, thing, manager, helper, or utils when
+  a specific domain term exists.
+- Avoid encoded type prefixes and unexplained abbreviations.
+- Keep the same concept named consistently across UI, domain, tests, and docs.
+
+
+3. FUNCTIONS
+
+- A function should perform one coherent operation at one abstraction level.
+- Prefer small pure functions for validation, transformation, and graph logic.
+- Make side effects explicit at repository, adapter, store-action, or service
+  boundaries.
+- Prefer an options/input object when a function needs several related
+  arguments.
+- Return early for invalid or exceptional branches when it improves clarity.
+- Do not use boolean parameters that secretly select unrelated behaviors;
+  expose separate named operations or an explicit mode.
+- Do not mutate caller-owned collections unless the contract states it.
+- Return typed results for expected domain failures; reserve thrown errors for
+  unexpected or boundary failures.
+
+
+4. TYPES AND DATA
+
+- Keep TypeScript strict and avoid any.
+- Model finite states with unions rather than arbitrary strings.
+- Use discriminated unions for events, commands, results, and view states.
+- Validate untrusted runtime data with Zod before it enters domain state.
+- Represent illegal states as difficult or impossible to construct.
+- Keep one source of truth; do not duplicate connected device IDs inside Device.
+- Prefer readonly inputs and immutable updates at public boundaries.
+- Do not use non-null assertions to hide uncertain state without a proven
+  invariant.
+
+
+5. MODULES AND DEPENDENCIES
+
+- Keep modules cohesive around one domain or feature responsibility.
+- Export a small public API from index.ts; keep implementation details private.
+- Follow the dependency direction in frontend-architecture.txt.
+- Domain code must not import React, MUI, Tailwind, Zustand, or Cytoscape.
+- Feature modules must not import another feature's private files.
+- Avoid circular dependencies.
+- Prefer dependency injection at boundaries over importing replaceable global
+  implementations directly.
+- Add a dependency only when its value exceeds its maintenance, security, and
+  bundle cost.
+
+
+6. REACT COMPONENTS AND HOOKS
+
+- Components render UI and coordinate user intent; business rules belong in the
+  domain layer.
+- Keep components focused. Split by responsibility, not by arbitrary line
+  count.
+- Prefer composition over large components with many configuration flags.
+- Do not mirror props into state without a synchronization requirement.
+- Derive values during render or through selectors instead of synchronization
+  effects when possible.
+- Effects are for synchronization with external systems, not ordinary data
+  transformation.
+- Custom hooks should expose a focused capability and obey React hook rules.
+- Avoid premature memoization; add it after measurement or when referential
+  stability is part of a real dependency contract.
+- Use stable domain IDs as list keys.
+- Include loading, empty, error, disabled, and keyboard states in the component
+  design.
+
+
+7. STATE AND SIDE EFFECTS
+
+- Put authoritative graph data in the normalized graph store.
+- Put selection, filters, layout, and panels in view state.
+- Keep ephemeral hover/gesture state inside Cytoscape when React does not need
+  it.
+- Keep Cytoscape instances, DOM nodes, timers, AbortControllers, and promises
+  outside Zustand state.
+- Update graph entities and adjacency indexes atomically.
+- Subscribe components to the smallest useful store slice.
+- Centralize deployment timers in a service and clean them up deterministically.
+- Do not trigger a layout for status/progress-only changes.
+
+
+8. ERRORS
+
+- Never swallow errors silently.
+- Distinguish validation, domain conflict, not-found, transport, rendering, and
+  unexpected errors.
+- Preserve a consistent state when an operation fails.
+- User messages explain what failed, what changed, and the next action.
+- Technical logs must not contain secrets or unreviewed full graph payloads.
+- Avoid catch blocks that only log and then pretend the operation succeeded.
+
+
+9. COMMENTS AND DOCUMENTATION
+
+- Prefer clear code over comments that restate syntax.
+- Comments explain why, constraints, non-obvious tradeoffs, or external quirks.
+- Remove stale and commented-out code; version control preserves history.
+- Public domain contracts and unusual performance workarounds require concise
+  documentation.
+- Use TODO with an issue/reference and reason; avoid anonymous permanent TODOs.
+- Update documentation in the same change as affected behavior.
+
+
+10. TESTABILITY
+
+- Inject time, repositories, and other external boundaries.
+- Keep graph algorithms pure and deterministic.
+- Test observable behavior and contracts rather than private implementation.
+- A bug fix includes a regression test at the lowest valuable level.
+- Do not expose production internals only to make a test convenient.
+- Avoid flaky real-time waits; use fake clocks or observable completion states.
+
+
+11. SOLID: SINGLE RESPONSIBILITY PRINCIPLE
+
+A module should have one primary reason to change.
+
+Project application:
+
+- GraphAdapter changes for Cytoscape integration concerns.
+- GraphRepository changes for data-source concerns.
+- Domain commands change for business rules.
+- React features change for user interaction/presentation.
+- Design tokens change for visual-system decisions.
+
+Do not create a GraphManager that loads data, mutates the store, controls
+Cytoscape, runs simulation, displays notifications, and calculates impact.
+
+
+12. SOLID: OPEN/CLOSED PRINCIPLE
+
+Modules should allow expected extension without modifying unrelated stable
+logic.
+
+Project application:
+
+- Model device/status variants with exhaustive typed maps.
+- Register layout definitions through a typed configuration map.
+- Add repository implementations behind GraphRepository.
+- Add visual variants through shared UI component contracts.
+
+Do not build speculative plugin systems. Modify straightforward code when the
+extension axis is not yet established.
+
+
+13. SOLID: LISKOV SUBSTITUTION PRINCIPLE
+
+An implementation must honor the guarantees of its interface.
+
+Project application:
+
+- MockGraphRepository and a future HttpGraphRepository return equivalent
+  validated domain shapes and compatible failure semantics.
+- GraphAdapter implementations must preserve selection and change contracts.
+- AppButton variants preserve keyboard and disabled behavior.
+
+Do not declare a broad interface that some implementations satisfy only by
+throwing "not supported" for normal operations.
+
+
+14. SOLID: INTERFACE SEGREGATION PRINCIPLE
+
+Consumers should depend only on capabilities they use.
+
+Project application:
+
+- Separate graph rendering control from graph event subscription if consumers
+  need only one side.
+- Prefer focused repository capability types when read-only features should not
+  receive mutation methods.
+- Keep shared UI props intentional rather than forwarding every MUI option.
+
+Do not create a universal service interface containing unrelated graph, device,
+telemetry, notification, and storage operations.
+
+
+15. SOLID: DEPENDENCY INVERSION PRINCIPLE
+
+High-level policy must not depend directly on replaceable infrastructure.
+
+Project application:
+
+- Decommission use cases depend on domain/repository contracts, not fetch.
+- Features depend on GraphAdapter, not the Cytoscape core.
+- Simulation depends on an injectable clock/scheduler contract.
+- Observability calls go through an application interface, not provider SDKs
+  scattered throughout features.
+
+Keep interfaces near the policy/consumer that owns their requirements.
+
+
+16. REVIEW CHECKLIST
+
+- Are names expressed in project domain language?
+- Does each module have a coherent responsibility?
+- Is business logic independent of UI/rendering libraries?
+- Are runtime boundaries validated?
+- Are state ownership and side effects explicit?
+- Can expected failures be handled without inconsistent state?
+- Are dependencies directed toward stable contracts?
+- Is the behavior accessible and testable?
+- Is complexity required by a current requirement?
+- Do tests and documentation change with the behavior?
+
+
+17. FUTURE CURSOR RULES
+
+When creating Cursor rules, convert these principles into short, enforceable,
+path-scoped instructions. Keep this document as the human-readable rationale.
+Rules should reference, not duplicate, the canonical architecture, design,
+testing, accessibility, security, and error-handling documents.
+

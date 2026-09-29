@@ -1,0 +1,206 @@
+DATA CENTER DEPLOYMENT VISUALIZER
+UX Flows and Acceptance Criteria
+
+Status: Proposed
+
+
+1. APPLICATION LOAD
+
+Flow:
+
+1. User opens the application.
+2. A stable loading state appears while data is validated/prepared.
+3. The graph, summary, controls, and accessible device list appear.
+4. The graph fits its initial visible content.
+
+Acceptance criteria:
+
+- No unusable empty canvas flashes before initialization.
+- Invalid data shows an actionable error state.
+- An empty valid dataset shows an empty state, not an error.
+- Loading and error states are announced to assistive technology.
+
+
+2. SELECT AND INSPECT DEVICE
+
+Flow:
+
+1. User selects a graph node or device-list row.
+2. The selected device and direct relationships are emphasized.
+3. The details panel opens with device and connection information.
+4. User closes the panel or clears selection.
+
+Acceptance criteria:
+
+- Graph and list/table selection remain synchronized.
+- Details display ID, name, type, rack, status, progress, and connections.
+- Unrelated graph elements are de-emphasized but remain perceivable.
+- Closing a modal presentation restores focus to its trigger.
+
+
+3. SEARCH FOR DEVICE
+
+Flow:
+
+1. User enters a name or ID.
+2. Matching results appear.
+3. User selects a result.
+4. Conflicting filters are handled explicitly.
+5. The graph reveals, focuses, and selects the device.
+
+Acceptance criteria:
+
+- Matching is case-insensitive.
+- Keyboard navigation works through results.
+- No results produces a clear message.
+- If filters hide a result, the app asks/offers to reveal it or explains why it
+  cannot be shown; it must not silently fail.
+
+
+4. FILTER GRAPH
+
+Flow:
+
+1. User selects status and/or type filters.
+2. Visible nodes and eligible edges update.
+3. User clears individual filters or all filters.
+
+Acceptance criteria:
+
+- Underlying graph data is not deleted.
+- Edges with hidden endpoints are hidden.
+- Active filters are visible and removable.
+- Zero results shows a filter-specific empty state and clear-filters action.
+- Selected hidden devices are deselected or clearly preserved by an explicit
+  documented policy; silent stale details are not allowed.
+
+
+5. CHANGE LAYOUT
+
+Flow:
+
+1. User opens the layout control.
+2. User selects grid, circle, breadth-first, or cose.
+3. The visible graph rearranges.
+
+Acceptance criteria:
+
+- Domain data and filters remain unchanged.
+- The selected layout is indicated.
+- Repeated clicks do not start uncontrolled overlapping layouts.
+- The interface signals a materially long layout operation.
+
+
+6. ADD CONNECTION
+
+Flow:
+
+1. User invokes Add connection.
+2. User chooses source, target, and connection type.
+3. The form validates the relationship.
+4. User submits.
+5. Graph, details, and accessible representation update.
+
+Acceptance criteria:
+
+- The same device cannot be both endpoints.
+- Missing and duplicate relationships show field-level or form-level errors.
+- Submission cannot accidentally run twice.
+- Failure preserves user input and offers retry/cancel.
+- Success is visibly confirmed without requiring a page reload.
+
+
+7. REMOVE CONNECTION
+
+Flow:
+
+1. User chooses an existing relationship.
+2. User invokes Remove.
+3. User confirms if confirmation is configured.
+4. The relationship disappears from all projections.
+
+Acceptance criteria:
+
+- The affected endpoints are named before destructive confirmation.
+- Cancel performs no mutation.
+- Failure restores/preserves the relationship and explains recovery.
+- No orphan adjacency-index entries remain.
+
+
+8. WATCH DEPLOYMENT
+
+Flow:
+
+1. A deploying device receives simulated progress updates.
+2. Its node, details, and summary update without repositioning the graph.
+3. At 100 percent, status changes to deployed.
+
+Acceptance criteria:
+
+- Progress never displays outside 0 through 100.
+- Updates do not steal focus or repeatedly announce every minor percentage.
+- Important completion/failure status is available textually.
+- Multiple updates are coalesced when required for performance.
+
+
+9. DECOMMISSION DEVICE
+
+Flow:
+
+1. User selects an eligible device and chooses Decommission.
+2. The app computes direct impact.
+3. A warning lists affected devices and connections.
+4. User cancels or confirms.
+5. Confirmed device becomes decommissioning.
+6. On completion, the device follows the approved removal/archive policy.
+
+Acceptance criteria:
+
+- Cancel leaves graph state unchanged.
+- The confirmation uses the device name and count/list of affected connections.
+- Confirmation is unavailable while already submitting.
+- A second decommission command cannot start concurrently.
+- Failure leaves a recoverable, internally consistent state.
+- Completion cannot leave active orphan connections.
+
+
+10. GRAPH/LIST RESPONSIVE BEHAVIOR
+
+Desktop:
+
+- Graph receives the primary workspace area.
+- Details are shown in a side panel/drawer.
+- Summary and graph controls remain discoverable.
+
+Narrow view:
+
+- Controls wrap or move into an accessible overflow area.
+- Details use a full-width drawer/dialog when necessary.
+- The device list/table remains reachable.
+- Primary actions do not rely on hover.
+
+
+11. EMPTY AND ERROR STATES
+
+Required states:
+
+- No graph data loaded
+- No filter matches
+- Search has no matches
+- Selected device was removed
+- Invalid snapshot
+- Repository/network failure
+- Layout failure
+- Mutation failure
+
+Each state must explain what happened and offer the next valid action whenever
+recovery is possible.
+
+
+12. ACCEPTANCE TEST TRACEABILITY
+
+Each Cypress critical path should reference the relevant flow number in its
+test name or metadata. Each functional requirement in product-requirements.txt
+must map to at least one domain, integration, or end-to-end test before MVP
+release.
+
